@@ -1,0 +1,28 @@
+﻿# --- Dependencies ---
+node_modules/
+
+# --- Secrets / environment ---
+.env
+.env.*
+!.env.example
+
+# --- Runtime data (never commit) ---
+uploads/
+backups/
+*.sql.gz
+
+# --- Local tooling / binaries ---
+tools/
+*.log
+npm-debug.log*
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+
+# --- Personal files ---
+WhatsApp Image*

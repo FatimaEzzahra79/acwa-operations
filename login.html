@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACWA Operations — Portail de Gestion</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        acwa: {
+                            purple: "#9167D0",
+                            purpleDark: "#7650B5",
+                            ink: "#3F3F46",
+                            soft: "#F7F7F8"
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"]
+                    },
+                    boxShadow: {
+                        acwa: "0 24px 70px rgba(0,0,0,.10)"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: #f7f7f8;
+        }
+
+        .hero-image {
+            animation: slowZoom 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes slowZoom {
+            from {
+                transform: scale(1.02);
+            }
+            to {
+                transform: scale(1.08);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp .8s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        .fade-up-delay {
+            animation: fadeUp .8s .12s cubic-bezier(.22, 1, .36, 1) both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-ring {
+            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+
+        .input-ring:focus {
+            outline: none;
+            border-color: #9167D0;
+            box-shadow: 0 0 0 4px rgba(145, 103, 208, .12);
+            background: white;
+        }
+
+        .login-button {
+            transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 25px rgba(145, 103, 208, .25);
+            background: #7650B5;
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== LANGUE SWITCH ===== */
+        .lang-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 10px;
+            border-top: 1px solid #f0ecf4;
+        }
+
+        .lang-switch button {
+            background: none;
+            border: none;
+            color: #a88ab8;
+            font-weight: 600;
+            font-size: 0.65rem;
+            cursor: pointer;
+            padding: 4px 14px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: "Inter", sans-serif;
+        }
+
+        .lang-switch button.active {
+            background: #9167D0;
+            color: white;
+        }
+
+        .lang-switch button:hover:not(.active) {
+            color: #3F3F46;
+            background: #f0ecf4;
+        }
+
+        .lang-switch .lang-separator {
+            color: #e0d8e8;
+            font-size: 0.7rem;
+        }
+
+        /* ===== MODAL FORGOT PASSWORD ===== */
+        #forgotModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #forgotModal.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            animation: fadeUp 0.4s ease;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #3F3F46;
+            color: white;
+            padding: 14px 22px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            gap: 14px;
+            z-index: 9999;
+            border-left: 5px solid #9167D0;
+            animation: fadeUp 0.4s ease;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast i {
+            color: #9167D0;
+            font-size: 1.2rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .hero-image {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <div>
+            <strong id="toastTitle">Succès</strong>
+            <p id="toastMessage" class="text-sm opacity-80 mt-0.5">Action effectuée</p>
+        </div>
+    </div>
+
+    <main class="min-h-screen grid lg:grid-cols-[1.05fr_.95fr]">
+
+        <!-- ===== LEFT: ACWA Operations visual ===== -->
+        <section class="relative min-h-[430px] lg:min-h-screen overflow-hidden bg-zinc-900">
+            <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fecoactu.ma%2Fwp-content%2Fuploads%2F2020%2F01%2F2D2E063C-8931-45FF-93DD-08AE7288C327-1024x640.jpeg&f=1&nofb=1&ipt=f3230c1f4a913d7b37b56e0efbb31d149f4a46e1665f8e03881ce58cc86b5820"
+            alt="Centrale solaire" class="hero-image absolute inset-0 h-full w-full object-cover" />
+
+            <!-- Image treatment -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/10"></div>
+
+            <!-- Content -->
+            <div class="relative z-10 flex min-h-[430px] lg:min-h-screen flex-col justify-between p-7 sm:p-10 lg:p-14 xl:p-16 text-white">
+
+                <div class="fade-up">
+                    <div class="inline-flex items-center gap-3 rounded-full border border-white/20 bg-black/20 px-4 py-2 backdrop-blur-md">
+                        <span class="h-2 w-2 rounded-full bg-acwa-purple"></span>
+                        <span class="text-xs font-semibold tracking-[0.22em] uppercase text-white/90">
+                            ACWA Operations
+                        </span>
+                    </div>
+                </div>
+
+                <div class="max-w-2xl fade-up-delay">
+                    <p class="mb-3 text-sm font-semibold tracking-[0.2em] uppercase text-acwa-purple" id="tagline">
+                        Energy · Water · Operations
+                    </p>
+
+                    <h1 class="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+                        <span id="heroTitle1">Piloter les opérations.</span>
+                        <span class="text-white/70" id="heroTitle2">Connecter l'énergie.</span>
+                    </h1>
+
+                    <p class="mt-5 max-w-xl text-sm leading-7 text-white/75 sm:text-base" id="heroText">
+                        Plateforme centralisée de gestion, de suivi et de supervision
+                        des opérations ACWA, conçue pour une visibilité claire et une
+                        performance opérationnelle optimale.
+                    </p>
+
+                    <div class="mt-8 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3">
+                        <div class="rounded-2xl border border-white/15 bg-black/20 p-4 backdrop-blur-md">
+                            <p class="text-2xl font-bold">24/7</p>
+                            <p class="mt-1 text-xs text-white/60" id="statSupervision">Supervision</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/15 bg-black/20 p-4 backdrop-blur-md">
+                            <p class="text-2xl font-bold">100%</p>
+                            <p class="mt-1 text-xs text-white/60" id="statTracabilite">Traçabilité</p>
+                        </div>
+                        <div class="hidden rounded-2xl border border-white/15 bg-black/20 p-4 backdrop-blur-md sm:block">
+                            <p class="text-2xl font-bold">V2.0</p>
+                            <p class="mt-1 text-xs text-white/60" id="statPlateforme">Plateforme</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-8 text-xs text-white/45">
+                    <span>© 2026 ACWA Operations</span>
+                    <span class="hidden sm:block" id="footerTagline">Operational Intelligence Platform</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== RIGHT: Login ===== -->
+        <section id="authPanel" class="relative flex self-start min-h-screen items-center justify-center bg-white px-6 py-2 sm:px-10 lg:px-14 xl:px-20">
+
+            <!-- subtle decoration -->
+            <div class="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-acwa-purple/5 blur-3xl"></div>
+
+            <div id="authCard" class="relative w-full max-w-md">
+
+                <!-- Logo -->
+                <div class="mb-2 flex justify-center">
+                    <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmedia.licdn.com%2Fdms%2Fimage%2Fv2%2FD4E0BAQF37-gxdh2fYw%2Fcompany-logo_200_200%2FB4EZv5v9d7GcAM-%2F0%2F1769421658747%2Fnomac_logo%3Fe%3D2147483647%26v%3Dbeta%26t%3DUI4N7v-S5R3SXa8L-VYaIY3xgw5qcpZe5UMg-qx6H7Y&f=1&nofb=1&ipt=42fb54d0d62767c20ca5c8aa9a132153a7c092700a688e6deca49090333b165b"
+                    alt="ACWA Operations" class="h-auto w-[150px] object-contain" />
+                </div>
+
+                <div class="fade-up">
+                    <div class="mb-2 text-center">
+                        <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-acwa-purple" id="secureLabel">
+                            Espace sécurisé
+                        </p>
+
+                        <h2 class="text-2xl font-bold tracking-tight text-zinc-800 sm:text-3xl" id="portalTitle">
+                            Portail de Gestion
+                        </h2>
+
+                        <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-400" id="portalSubtitle">
+                            Connectez-vous pour accéder à votre espace.
+                        </p>
+                    </div>
+
+                    <!-- ===== MESSAGE D'ERREUR ===== -->
+                    <div id="errorMessage" class="hidden rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-700 border-l-4 border-red-700 mb-4">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="errorText">Email ou mot de passe incorrect</span>
+                    </div>
+
+                    <form id="loginForm" class="space-y-3">
+
+                        <!-- Email -->
+                        <div>
+                            <label for="email" class="mb-1 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                                <span id="emailLabel">Adresse email</span>
+                            </label>
+
+                            <div class="relative">
+                                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                        <path d="m3 7 9 6 9-6"></path>
+                                    </svg>
+                                </span>
+
+                                <input id="email" name="email" type="email" autocomplete="email"
+                                placeholder="votre@email.com" required
+                                class="input-ring h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-12 pr-4 text-sm text-zinc-800 placeholder:text-zinc-300" />
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <div class="mb-1 flex items-center justify-between">
+                                <label for="password" class="block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                                    <span id="passwordLabel">Mot de passe</span>
+                                </label>
+
+                                <button type="button" id="forgotText"
+                                class="text-[11px] font-medium text-acwa-purple transition hover:text-acwa-purpleDark">
+                                <span id="forgotLabel">Mot de passe oublié ?</span>
+                            </button>
+                        </div>
+
+                        <div class="relative">
+                            <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <rect x="4" y="10" width="16" height="11" rx="2"></rect>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                                </svg>
+                            </span>
+
+                            <input id="password" name="password" type="password" autocomplete="current-password"
+                            placeholder="••••••••" required
+                            class="input-ring h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-12 pr-12 text-sm text-zinc-800 placeholder:text-zinc-300" />
+
+                            <button type="button" aria-label="Afficher le mot de passe"
+                            onclick="togglePassword()"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300 transition hover:text-acwa-purple">
+                            <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                <circle cx="12" cy="12" r="2.5"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" id="loginBtn"
+                class="login-button mt-2 flex h-12 w-full items-center justify-center gap-3 rounded-xl bg-acwa-purple px-5 text-xs font-bold uppercase tracking-[0.18em] text-white">
+                <span id="loginText">Déverrouiller l'accès</span>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14"></path>
+                    <path d="m13 6 6 6-6 6"></path>
+                </svg>
+            </button>
+        </form>
+
+        <!-- ===== LANGUE SWITCH (EN/FR) en bas ===== -->
+        <div class="lang-switch">
+            <button class="active" data-lang="fr" onclick="switchLanguage('fr')">FR</button>
+            <span class="lang-separator">|</span>
+            <button data-lang="en" onclick="switchLanguage('en')">EN</button>
+        </div>
+
+        <div class="mt-3 border-t border-zinc-100 pt-3 text-center">
+<p class="text-[10px] uppercase tracking-[0.18em] text-zinc-300" id="restrictedText">
+                    Accès réservé aux utilisateurs autorisés
+                </p>
+           
+        </div>
+    </div>
+</div>
+</section>
+</main>
+
+<!-- ===== MODAL FORGOT PASSWORD ===== -->
+<div id="forgotModal" onclick="if(event.target===this) closeForgotModal()">
+    <div class="modal-box">
+        <div style="text-align:center; margin-bottom:24px;">
+            <div style="width:56px; height:56px; background:#9167D0; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:1.4rem; color:white;">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <h2 style="font-size:1.3rem; font-weight:700; color:#2d1a3d;" id="modalTitle">Réinitialisation</h2>
+            <p style="color:#6a5a7a; font-size:0.9rem;" id="modalSubtitle">Entrez votre email pour recevoir un lien</p>
+        </div>
+
+        <div id="forgotMessage" style="padding:12px 16px; border-radius:10px; font-size:0.85rem; margin-bottom:16px; display:none;"></div>
+
+        <form id="forgotForm" onsubmit="handleForgotPassword(event)">
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-size:0.7rem; font-weight:600; color:#2d1a3d; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;" id="modalEmailLabel">Adresse Email</label>
+                <input type="email" id="forgotEmail" placeholder="votre@email.com"
+                style="width:100%; padding:12px 16px; border:2px solid #e8e0ee; border-radius:12px; font-size:0.9rem; outline:none; transition:all 0.3s ease; background:#faf8fc;" required>
+            </div>
+            <button type="submit" id="forgotBtn"
+            style="width:100%; padding:14px; background:#9167D0; color:white; border:none; border-radius:12px; font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.3s ease;">
+            <i class="fas fa-paper-plane mr-2"></i> <span id="modalSendBtn">Envoyer le lien</span>
+        </button>
+    </form>
+
+    <div style="text-align:center; margin-top:16px;">
+        <button onclick="closeForgotModal()" style="background:none; border:none; color:#a88ab8; cursor:pointer; font-size:0.85rem;" id="modalBackBtn">Retour à la connexion</button>
+    </div>
+</div>
+</div>
+
+<!-- ===== FONT AWESOME ===== -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<script>
+    // ============================================
+    // TOGGLE PASSWORD
+    // ============================================
+    function togglePassword() {
+        const input = document.getElementById("password");
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    // ============================================
+    // TOAST
+    // ============================================
+    function showToast(message, title) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toastTitle').textContent = title || 'Succès';
+        document.getElementById('toastMessage').textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ============================================
+    // TRANSLATIONS (EN/FR)
+    // ============================================
+    const translations = {
+        fr: {
+            secureLabel: 'Espace sécurisé',
+            portalTitle: 'Portail de Gestion',
+            portalSubtitle: 'Connectez-vous pour accéder à votre espace.',
+            tagline: 'Energy · Water · Operations',
+            heroTitle1: 'Piloter les opérations.',
+            heroTitle2: "Connecter l'énergie.",
+            heroText: 'Plateforme centralisée de gestion, de suivi et de supervision des opérations ACWA, conçue pour une visibilité claire et une performance opérationnelle optimale.',
+            statSupervision: 'Supervision',
+            statTracabilite: 'Traçabilité',
+            statPlateforme: 'Plateforme',
+            footerTagline: 'Operational Intelligence Platform',
+            restricted: 'Accès réservé aux utilisateurs autorisés',
+            email: 'Adresse email',
+            password: 'Mot de passe',
+            forgot: 'Mot de passe oublié ?',
+            login: 'Déverrouiller l\'accès',
+            error: 'Email ou mot de passe incorrect',
+            placeholderEmail: 'votre@email.com',
+            placeholderPassword: '••••••••',
+            modalTitle: 'Réinitialisation',
+            modalSubtitle: 'Entrez votre email pour recevoir un lien',
+            modalEmail: 'Adresse Email',
+            modalSend: 'Envoyer le lien',
+            modalBack: 'Retour à la connexion',
+            demo: 'Demo:'
+        },
+        en: {
+            secureLabel: 'Secure Area',
+            portalTitle: 'Management Portal',
+            portalSubtitle: 'Sign in to access your operational workspace.',
+            tagline: 'Energy · Water · Operations',
+            heroTitle1: 'Drive operations.',
+            heroTitle2: 'Connect energy.',
+            heroText: 'A centralized platform for managing, tracking and supervising ACWA operations, designed for clear visibility and optimal operational performance.',
+            statSupervision: 'Monitoring',
+            statTracabilite: 'Traceability',
+            statPlateforme: 'Platform',
+            footerTagline: 'Operational Intelligence Platform',
+            restricted: 'Restricted to authorized users',
+            email: 'Email Address',
+            password: 'Password',
+            forgot: 'Forgot password?',
+            login: 'Unlock Access',
+            error: 'Invalid email or password',
+            placeholderEmail: 'your@email.com',
+            placeholderPassword: '••••••••',
+            modalTitle: 'Reset Password',
+            modalSubtitle: 'Enter your email to receive a link',
+            modalEmail: 'Email Address',
+            modalSend: 'Send link',
+            modalBack: 'Back to login',
+            demo: 'Demo:'
+        }
+    };
+
+    let currentLang = localStorage.getItem('acwa_lang') || 'fr';
+
+    // ============================================
+    // SWITCH LANGUAGE
+    // ============================================
+    function switchLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+
+        // Panneau gauche
+        document.getElementById('tagline').textContent = t.tagline;
+        document.getElementById('heroTitle1').textContent = t.heroTitle1;
+        document.getElementById('heroTitle2').textContent = t.heroTitle2;
+        document.getElementById('heroText').textContent = t.heroText;
+        document.getElementById('statSupervision').textContent = t.statSupervision;
+        document.getElementById('statTracabilite').textContent = t.statTracabilite;
+        document.getElementById('statPlateforme').textContent = t.statPlateforme;
+        document.getElementById('footerTagline').textContent = t.footerTagline;
+
+        // Panneau droit
+        document.getElementById('secureLabel').textContent = t.secureLabel;
+        document.getElementById('portalTitle').textContent = t.portalTitle;
+        document.getElementById('portalSubtitle').textContent = t.portalSubtitle;
+        document.getElementById('restrictedText').textContent = t.restricted;
+        document.getElementById('emailLabel').textContent = t.email;
+        document.getElementById('passwordLabel').textContent = t.password;
+        document.getElementById('forgotLabel').textContent = t.forgot;
+        document.getElementById('loginText').textContent = t.login;
+        document.getElementById('email').placeholder = t.placeholderEmail;
+        document.getElementById('password').placeholder = t.placeholderPassword;
+
+        // Modal
+        document.getElementById('modalTitle').textContent = t.modalTitle;
+        document.getElementById('modalSubtitle').textContent = t.modalSubtitle;
+        document.getElementById('modalEmailLabel').textContent = t.modalEmail;
+        document.getElementById('modalSendBtn').textContent = t.modalSend;
+        document.getElementById('modalBackBtn').textContent = t.modalBack;
+
+        // Active class - bouton sélectionné en violet
+        document.querySelectorAll('.lang-switch button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+
+        // Sauvegarder la langue pour toute la plateforme
+        localStorage.setItem('acwa_lang', lang);
+
+        // Cacher l'erreur
+        document.getElementById('errorMessage').classList.add('hidden');
+
+        // Réajuster la taille de la carte après changement de langue
+        fitAuthCard();
+    }
+
+    // ============================================
+    // MODAL FORGOT PASSWORD
+    // ============================================
+    document.getElementById('forgotText').addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('forgotModal').classList.add('show');
+        document.getElementById('forgotMessage').style.display = 'none';
+    });
+
+    function closeForgotModal() {
+        document.getElementById('forgotModal').classList.remove('show');
+    }
+
+    // ============================================
+    // HANDLE FORGOT PASSWORD
+    // ============================================
+    async function handleForgotPassword(e) {
+        e.preventDefault();
+        const email = document.getElementById('forgotEmail').value.trim();
+        const message = document.getElementById('forgotMessage');
+        const btn = document.getElementById('forgotBtn');
+
+        message.style.display = 'none';
+
+        if (!email) {
+            message.style.display = 'block';
+            message.style.background = '#fde8e8';
+            message.style.color = '#c0392b';
+            message.style.borderLeft = '4px solid #c0392b';
+            message.textContent = '❌ Veuillez entrer votre email';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Envoi...';
+
+        try {
+            const response = await fetch('/api/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const result = await response.json();
+
+            message.style.display = 'block';
+            if (result.success) {
+                message.style.background = '#d4edda';
+                message.style.color = '#155724';
+                message.style.borderLeft = '4px solid #28a745';
+                message.textContent = '✅ ' + result.message + ' ! Vérifiez votre boîte mail.';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i> Envoyé';
+                setTimeout(() => {
+                    closeForgotModal();
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Envoyer le lien';
+                    document.getElementById('forgotEmail').value = '';
+                }, 3000);
+            } else {
+                message.style.background = '#fde8e8';
+                message.style.color = '#c0392b';
+                message.style.borderLeft = '4px solid #c0392b';
+                message.textContent = '❌ ' + (result.error || 'Erreur lors de l\'envoi');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Envoyer le lien';
+            }
+        } catch (error) {
+            message.style.display = 'block';
+            message.style.background = '#fde8e8';
+            message.style.color = '#c0392b';
+            message.style.borderLeft = '4px solid #c0392b';
+            message.textContent = '❌ Erreur de connexion au serveur';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Envoyer le lien';
+        }
+    }
+
+    // ============================================
+    // LOGIN - AVEC CONNEXION RÉELLE
+    // ============================================
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const errorMsg = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const loginBtn = document.getElementById('loginBtn');
+
+        // Cacher l'erreur précédente
+        errorMsg.classList.add('hidden');
+
+        if (!email || !password) {
+            errorText.textContent = translations[currentLang].error || 'Veuillez remplir tous les champs';
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+
+        // Désactiver le bouton
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (currentLang === 'fr' ? 'Connexion...' : 'Signing in...');
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                localStorage.setItem('acwa_user', JSON.stringify(result.user));
+                localStorage.setItem('acwa_token', result.token);
+                window.location.href = 'index.html';
+            } else {
+                errorText.textContent = result.error || translations[currentLang].error;
+                errorMsg.classList.remove('hidden');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span>' + translations[currentLang].login + '</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>';
+            }
+        } catch (error) {
+            errorText.textContent = 'Erreur de connexion. Veuillez réessayer.';
+            errorMsg.classList.remove('hidden');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<span>' + translations[currentLang].login + '</span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>';
+        }
+    });
+
+    // ============================================
+    // SESSION CHECK
+    // ============================================
+    if (localStorage.getItem('acwa_token')) {
+        window.location.href = 'index.html';
+    }
+
+    // ============================================
+    // FIT CARD TO SCREEN (voir tout le formulaire sans scroll)
+    // ============================================
+    function fitAuthCard() {
+        const panel = document.getElementById('authPanel');
+        const card = document.getElementById('authCard');
+        if (!panel || !card) return;
+        card.style.transform = 'none';
+        panel.style.height = '';
+        panel.style.overflow = '';
+        const vh = window.innerHeight;
+        const h = card.offsetHeight;
+        if (h > vh - 8) {
+            card.style.transform = 'scale(' + ((vh - 8) / h).toFixed(4) + ')';
+            card.style.transformOrigin = 'center center';
+            panel.style.height = '100vh';
+            panel.style.overflow = 'hidden';
+        }
+    }
+    window.addEventListener('resize', fitAuthCard);
+    window.addEventListener('load', fitAuthCard);
+
+    console.log('✅ Login page loaded with EN/FR');
+    switchLanguage(currentLang);
+    console.log('🌐 Language: ' + currentLang.toUpperCase());
+</script>
+
+</body>
+</html>

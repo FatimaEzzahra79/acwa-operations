@@ -1,0 +1,3299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACWA Operations — Control Center</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        acwa: { purple: "#9167D0", purpleDark: "#7650B5", purpleLight: "#C8A8E8", ink: "#3F3F46",
+                            soft: "#F7F7F8" }
+                    },
+                    fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js">
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Inter", sans-serif; background: #f7f7f8; }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: white;
+            border-right: 1px solid #f0ecf4;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 50;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: #e0d8e8; border-radius: 10px; }
+
+        .lang-btn {
+            padding: 4px 10px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+            color: #9ca3af;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        .lang-btn:hover { color: #3f3f46; }
+        .lang-btn.active {
+            background: #9167d0;
+            color: #ffffff;
+        }
+        .sidebar-logo { 
+            padding: 24px 20px 20px; 
+            border-bottom: 1px solid #f0ecf4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .sidebar-logo img {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+        .sidebar-menu { padding: 16px 12px; }
+        .sidebar-menu .menu-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #a88ab8;
+            padding: 8px 12px;
+            margin-top: 8px;
+        }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #6a5a7a;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .sidebar-menu a:hover { background: #f5f0fa; color: #3F3F46; }
+        .sidebar-menu a.active { background: #9167D0; color: white; }
+        .sidebar-menu a.active i { color: white; }
+        .sidebar-menu a i { width: 20px; color: #a88ab8; font-size: 0.95rem; }
+        .sidebar-menu a .badge {
+            margin-left: auto;
+            background: #f0ecf4;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #6a5a7a;
+        }
+        .sidebar-menu a.active .badge { background: rgba(255,255,255,0.2); color: white; }
+
+        .main-content { margin-left: 260px; padding: 24px 32px; min-height: 100vh; }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0ecf4;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .topbar .page-title h1 { font-size: 1.5rem; font-weight: 700; color: #3F3F46; }
+        .topbar .page-title p { font-size: 0.85rem; color: #a88ab8; }
+        .topbar .user-info { display: flex; align-items: center; gap: 16px; }
+        .topbar .user-info .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: #9167D0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px 20px;
+            border: 1px solid #f0ecf4;
+            transition: all 0.2s ease;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(145,103,208,0.08); }
+        .stat-card .stat-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-bottom: 10px;
+        }
+        .stat-card .stat-icon.purple { background: #f0ecf4; color: #9167D0; }
+        .stat-card .stat-icon.green { background: #e6f7ed; color: #2ecc71; }
+        .stat-card .stat-icon.orange { background: #fef6e6; color: #f39c12; }
+        .stat-card .stat-icon.blue { background: #e6f0fa; color: #3498db; }
+        .stat-card .stat-icon.red { background: #fde8e8; color: #e74c3c; }
+        .stat-card .stat-number { font-size: 1.4rem; font-weight: 700; color: #3F3F46; }
+        .stat-card .stat-label { font-size: 0.7rem; color: #a88ab8; font-weight: 500; }
+
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 24px;
+            border: 1px solid #f0ecf4;
+            margin-bottom: 20px;
+        }
+        .section-card .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0ecf4;
+        }
+        .section-card .section-header h3 { font-size: 0.95rem; font-weight: 700; color: #3F3F46; }
+        .section-card .section-header .badge {
+            font-size: 0.65rem; font-weight: 600;
+            padding: 3px 12px; border-radius: 20px;
+            background: #f0ecf4; color: #6a5a7a;
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #3F3F46;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e8e0ee;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+            background: #faf8fc;
+            color: #3F3F46;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #9167D0;
+            box-shadow: 0 0 0 3px rgba(145,103,208,0.1);
+            background: white;
+        }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        thead th {
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #a88ab8;
+            border-bottom: 1px solid #f0ecf4;
+        }
+        tbody td { padding: 10px 12px; border-bottom: 1px solid #f5f0fa; color: #3F3F46; }
+        tbody tr:hover { background: #faf8fc; }
+
+        .status {
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status.pending { background: #fff3cd; color: #856404; }
+        .status.approved { background: #d4edda; color: #155724; }
+        .status.archived { background: #e8d4f0; color: #6A3A8A; }
+        .status.returnable { background: #d1ecf1; color: #0c5460; }
+        .status.closed { background: #f8d7da; color: #721c24; }
+
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: #9167D0; color: white; }
+        .btn-primary:hover { background: #7650B5; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(145,103,208,0.25); }
+        .btn-success { background: #2ecc71; color: white; }
+        .btn-success:hover { background: #27ae60; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-outline { background: transparent; border: 2px solid #9167D0; color: #9167D0; }
+        .btn-outline:hover { background: #9167D0; color: white; }
+        .btn-sm { padding: 3px 10px; font-size: 0.65rem; }
+        .btn-xs { padding: 2px 8px; font-size: 0.6rem; }
+
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .search-bar input, .search-bar select {
+            padding: 10px 16px;
+            border: 2px solid #e8e0ee;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+            background: #faf8fc;
+            flex: 1;
+            min-width: 150px;
+        }
+        .search-bar input:focus, .search-bar select:focus {
+            border-color: #9167D0;
+            box-shadow: 0 0 0 3px rgba(145,103,208,0.1);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #3F3F46;
+            color: white;
+            padding: 14px 22px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 14px;
+            z-index: 9999;
+            border-left: 5px solid #9167D0;
+            animation: slideUp 0.4s ease;
+            max-width: 400px;
+        }
+        .toast.show { display: flex; }
+        .toast i { color: #9167D0; font-size: 1.2rem; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 40;
+        }
+        .sidebar-overlay.show { display: block; }
+
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.show { display: block; }
+            .main-content { margin-left: 0; padding: 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .search-bar { flex-direction: column; }
+            .search-bar input, .search-bar select { min-width: 100%; }
+            .topbar { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <div>
+            <strong id="toastTitle">Success</strong>
+            <p id="toastMessage" class="text-sm opacity-80 mt-0.5">Action completed</p>
+        </div>
+    </div>
+
+    <!-- ===== MODAL ===== -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+        <div class="modal-box" id="modalContent"></div>
+    </div>
+
+    <!-- ===== SIDEBAR OVERLAY ===== -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo" style="display: flex; justify-content: center; align-items: center; padding: 24px 20px; border-bottom: 1px solid #f0ecf4; background: #ffffff;">
+            <!-- ===== VOTRE LOGO ===== -->
+            <img src="logo-acwa.png" alt="ACWA Operations" style="height: 56px; width: auto; object-fit: contain; background: #ffffff;" />
+            <!-- ===== FIN LOGO ===== -->
+        </div>
+
+        <nav class="sidebar-menu">
+            <div class="menu-label" id="menuNavLabel">Navigation</div>
+            <a class="active" onclick="showSection('dashboard')" data-section="dashboard">
+                <i class="fas fa-th-large"></i> <span id="menuDashboard">Dashboard</span>
+            </a>
+            <a onclick="showSection('permits')" data-section="permits">
+                <i class="fas fa-file-alt"></i> <span id="menuPermis">Permits</span>
+                <span class="badge" id="permitsBadge">0</span>
+            </a>
+            <a onclick="showSection('materials')" data-section="materials">
+                <i class="fas fa-cubes"></i> <span id="menuMateriaux">Materials</span>
+            </a>
+            <a onclick="showSection('transport')" data-section="transport">
+                <i class="fas fa-truck"></i> <span id="menuTransport">Transport</span>
+            </a>
+            <a onclick="showSection('security')" data-section="security">
+                <i class="fas fa-shield-alt"></i> <span id="menuSecurite">Security</span>
+            </a>
+            <a onclick="showSection('contractors')" data-section="contractors">
+                <i class="fas fa-handshake"></i> <span id="menuContractants">Contractors</span>
+            </a>
+            <a onclick="showSection('approvals')" data-section="approvals">
+                <i class="fas fa-check-double"></i> <span id="menuApprobations">Approvals</span>
+            </a>
+            <a onclick="showSection('reports')" data-section="reports">
+                <i class="fas fa-chart-bar"></i> <span id="menuRapports">Reports</span>
+            </a>
+            <a onclick="showSection('users')" data-section="users" id="menuUsersItem" style="display:none;">
+                <i class="fas fa-users-gear"></i> <span id="menuUtilisateurs">Users</span>
+            </a>
+            <div class="menu-label" id="menuCompteLabel">Account</div>
+            <a onclick="showSection('profile')" data-section="profile">
+                <i class="fas fa-user-cog"></i> <span id="menuProfil">Profile</span>
+            </a>
+            <a onclick="logout()" style="color:#e74c3c;" id="menuDeconnexion">
+                <i class="fas fa-right-from-bracket" style="color:#e74c3c;"></i> Logout
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+
+        <!-- ===== TOP BAR ===== -->
+        <div class="topbar">
+            <div class="page-title">
+                <h1 id="pageTitle">Overview</h1>
+                <p id="pageSubtitle">Welcome to the regional control center.</p>
+            </div>
+            <div class="user-info">
+                <div>
+                    <div class="name font-semibold text-[#3F3F46]" id="userName">Administrator</div>
+                    <div class="role text-xs text-[#a88ab8]" id="userRole">Admin</div>
+                </div>
+
+                <!-- ===== LANGUAGE BUTTONS FR/EN ===== -->
+                <div class="flex items-center gap-1.5 border-r border-gray-200 pr-3">
+                    <button class="lang-btn" id="langFr" onclick="switchLanguage('fr')">
+                        FR
+                    </button>
+                    <span class="text-gray-300 text-xs">|</span>
+                    <button class="lang-btn active" id="langEn" onclick="switchLanguage('en')">
+                        EN
+                    </button>
+                </div>
+
+                <div class="avatar" id="userAvatar" onclick="showSection('profile')">A</div>
+                <button class="btn btn-outline btn-sm sm:hidden" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: DASHBOARD
+        ========================================== -->
+        <div id="section-dashboard" class="section active">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-number" id="totalPermits">0</div>
+                    <div class="stat-label" id="statTotalLabel">Total Permits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-arrow-left"></i></div>
+                    <div class="stat-number" id="inCount">0</div>
+                    <div class="stat-label" id="statInLabel">Entries (IN)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-arrow-right"></i></div>
+                    <div class="stat-number" id="outCount">0</div>
+                    <div class="stat-label" id="statOutLabel">Exits (OUT)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+                    <div class="stat-number" id="pendingCount">0</div>
+                    <div class="stat-label" id="statPendingLabel">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><i class="fas fa-archive"></i></div>
+                    <div class="stat-number" id="closedCount">0</div>
+                    <div class="stat-label" id="statClosedLabel">Closed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fas fa-file-pdf"></i></div>
+                    <div class="stat-number" id="pdfCount">0</div>
+                    <div class="stat-label" id="statPDFLabel">PDF Generated</div>
+                </div>
+            </div>
+
+            <!-- ===== SEARCH BAR ===== -->
+            <div class="search-bar">
+                <input type="text" id="searchPermit" placeholder="🔍 Search by number, company or destination..." oninput="searchPermit()">
+                <select id="searchType" onchange="searchPermit()">
+                    <option value="">All Types</option>
+                    <option value="IN">IN</option>
+                    <option value="OUT">OUT</option>
+                </select>
+                <select id="searchStatus" onchange="searchPermit()">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="returnable">Returnable</option>
+                    <option value="closed">Closed</option>
+                </select>
+                <button class="btn btn-primary" onclick="searchPermit()" id="searchBtn"><i class="fas fa-search"></i> Search</button>
+                <button class="btn btn-success" onclick="generateSearchPDF()" id="pdfResultBtn"><i class="fas fa-file-pdf"></i> PDF Result</button>
+                <button class="btn btn-outline" onclick="generateDashboardPDF()" id="pdfDashboardBtn"><i class="fas fa-file-pdf"></i> PDF Dashboard</button>
+                <button class="btn btn-outline" style="background:#217346;color:#fff;border-color:#217346;" onclick="exportExcel()" id="excelHeaderBtn"><i class="fas fa-file-excel"></i> Excel Export</button>
+            </div>
+
+            <!-- ===== PERMITS TABLE ===== -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="tableTitle"><i class="fas fa-list-ul text-acwa-purple mr-2"></i> Recent Permits</h3>
+                    <span class="badge" id="tableBadge">Live</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th id="thNumber">Permit #</th>
+                                <th id="thCompany">Company</th>
+                                <th id="thSubstance">Destination</th>
+                                <th id="thType">Type</th>
+                                <th id="thStatus">Status</th>
+                                <th id="thActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentPermitsTable">
+                            <tr><td colspan="6" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-inbox text-2xl block mb-2"></i>No permits
+                                </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: PERMITS
+        ========================================== -->
+        <div id="section-permits" class="section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="permitTitle"><i class="fas fa-file-alt text-acwa-purple mr-2"></i> Permit Management</h3>
+                    <span class="badge" id="permitBadge">PERMIT_DETAILS</span>
+                </div>
+
+                <form id="permitForm" onsubmit="savePermit(event)" class="mb-6">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label id="permitNumberLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="permitNumber" placeholder="P-2026-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label id="permitDateLabel">Date <span class="text-red-500">*</span></label>
+                            <input type="date" id="permitDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label id="permitCompanyLabel">Company <span class="text-red-500">*</span></label>
+                            <input type="text" id="companyName" placeholder="ACWA Chemicals" required>
+                        </div>
+                        <div class="form-group">
+                            <label id="permitAddressLabel">Address</label>
+                            <input type="text" id="companyAddress" placeholder="123 Industrial Zone">
+                        </div>
+                        <div class="form-group">
+                            <label id="permitSubstanceLabel">Destination <span class="text-red-500">*</span></label>
+                            <input type="text" id="substance" placeholder="Warehouse A" required>
+                        </div>
+                        <div class="form-group">
+                            <label id="permitTypeLabel">Type <span class="text-red-500">*</span></label>
+                            <select id="permitType" required>
+                                <option value="IN" id="permitTypeIn">IN (Entry)</option>
+                                <option value="OUT" id="permitTypeOut">OUT (Exit)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-3 flex-wrap">
+                        <button type="submit" class="btn btn-primary" id="permitSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="permitResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+
+                <div id="permitSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mb-4" id="permitSuccessMsg">✅ Permit saved!</div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th id="allThNumber">Permit #</th>
+                                <th id="allThCompany">Company</th>
+                                <th id="allThSubstance">Destination</th>
+                                <th id="allThType">Type</th>
+                                <th id="allThDate">Date</th>
+                                <th id="allThStatus">Status</th>
+                                <th id="allThActions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allPermitsTable">
+                            <tr><td colspan="7" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-inbox text-2xl block mb-2"></i>No permits
+                                </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: MATERIALS
+        ========================================== -->
+        <div id="section-materials" class="section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="materialsTitle"><i class="fas fa-cubes text-acwa-purple mr-2"></i> Materials</h3>
+                    <span class="badge" id="materialsBadge">MATERIALS</span>
+                </div>
+                <form id="materialForm" onsubmit="saveMaterial(event)">
+                    <div class="form-grid">
+                        <div class="form-group"><label id="matEquipmentLabel">Equipment # <span class="text-red-500">*</span></label>
+                            <input type="text" id="equipmentNo" placeholder="EQ-001" required></div>
+                        <div class="form-group"><label id="matPermitLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="materialPermit" placeholder="P-2026-001" required></div>
+                        <div class="form-group"><label id="matDescLabel">Description <span class="text-red-500">*</span></label>
+                            <input type="text" id="materialDesc" placeholder="Sulfuric Acid" required></div>
+                        <div class="form-group"><label id="matQtyLabel">Quantity <span class="text-red-500">*</span></label>
+                            <input type="number" id="materialQty" placeholder="10" required min="1" oninput="calcWeight()"></div>
+                        <div class="form-group"><label id="matUnitWeightLabel">Unit Weight (kg) <span class="text-red-500">*</span></label>
+                            <input type="number" id="materialUnitWeight" placeholder="4.5" required step="0.01" min="0.01" oninput="calcWeight()"></div>
+                        <div class="form-group"><label id="matWeightLabel">Weight (kg) <span class="text-green-500">(auto)</span></label>
+                            <input type="number" id="materialWeight" placeholder="45.0" required step="0.01" readonly
+                                style="background:#f0ecf4; cursor:not-allowed;"></div>
+                        <div class="form-group"><label id="matTypeLabel">Type <span class="text-red-500">*</span></label>
+                            <select id="materialType" required>
+                                <option value="IN" id="matTypeIn">IN</option>
+                                <option value="OUT" id="matTypeOut">OUT</option>
+                            </select></div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary" id="matSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="matResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+                <div id="materialSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Material saved!</div>
+                <div class="table-wrapper mt-4">
+                    <table>
+                        <thead><tr>
+                            <th id="matTableEquipment">Equipment</th>
+                            <th id="matTablePermit">Permit #</th>
+                            <th id="matTableDesc">Description</th>
+                            <th id="matTableQty">Qty</th>
+                            <th id="matTableUnitWeight">Unit Wt</th>
+                            <th id="matTableWeight">Weight</th>
+                            <th id="matTableType">Type</th>
+                            <th id="matTablePhoto">Photo</th>
+                            <th id="matTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="materialsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: TRANSPORT
+        ========================================== -->
+        <div id="section-transport" class="section">
+            <div class="section-card">
+                <div class="section-header"><h3 id="transportTitle"><i class="fas fa-truck text-acwa-purple mr-2"></i> Transport</h3><span class="badge" id="transportBadge">TRANSPORTS</span></div>
+                <form id="transportForm" onsubmit="saveTransport(event)">
+                    <div class="form-grid">
+                        <div class="form-group"><label id="transDriverLabel">Driver <span class="text-red-500">*</span></label>
+                            <input type="text" id="driverName" placeholder="Ahmed Benali" required></div>
+                        <div class="form-group"><label id="transVehicleLabel">Vehicle <span class="text-red-500">*</span></label>
+                            <input type="text" id="vehiclePlate" placeholder="123-A-45" required></div>
+                        <div class="form-group"><label id="transDateTimeLabel">Date/Time <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" id="transportDateTime" required></div>
+                        <div class="form-group"><label id="transPermitLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="transportPermit" placeholder="P-2026-001" required></div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary" id="transSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="transResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+                <div id="transportSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Transport saved!</div>
+                <div class="table-wrapper mt-4">
+                    <table>
+                        <thead><tr>
+                            <th id="transTableDriver">Driver</th>
+                            <th id="transTableVehicle">Vehicle</th>
+                            <th id="transTableDateTime">Date/Time</th>
+                            <th id="transTablePermit">Permit #</th>
+                            <th id="transTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="transportTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: SECURITY
+        ========================================== -->
+        <div id="section-security" class="section">
+            <div class="section-card">
+                <div class="section-header"><h3 id="securityTitle"><i class="fas fa-shield-alt text-acwa-purple mr-2"></i> Security Check</h3><span class="badge" id="securityBadge">SECURITY</span></div>
+                <form id="securityForm" onsubmit="saveSecurity(event)">
+                    <div class="form-grid">
+                        <div class="form-group"><label id="secOfficerLabel">Officer <span class="text-red-500">*</span></label>
+                            <input type="text" id="securityName" placeholder="Karim El Fassi" required></div>
+                        <div class="form-group"><label id="secDateTimeLabel">Date/Time <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" id="securityDateTime" required></div>
+                        <div class="form-group"><label id="secRemarksLabel">Remarks</label>
+                            <textarea id="securityRemarks" placeholder="Any observations..." rows="2"></textarea></div>
+                        <div class="form-group"><label id="secPermitLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="securityPermit" placeholder="P-2026-001" required></div>
+                        <div class="form-group"><label id="secSignatureLabel">Signature</label>
+                            <select id="securitySignature">
+                                <option value="false" id="secSigPending">Pending</option>
+                                <option value="true" id="secSigSigned">Signed</option>
+                            </select></div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary" id="secSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="secResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+                <div id="securitySuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Security check saved!</div>
+                <div class="table-wrapper mt-4">
+                    <table>
+                        <thead><tr>
+                            <th id="secTableOfficer">Officer</th>
+                            <th id="secTableDateTime">Date/Time</th>
+                            <th id="secTableRemarks">Remarks</th>
+                            <th id="secTableSignature">Signature</th>
+                            <th id="secTablePermit">Permit #</th>
+                            <th id="secTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="securityTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: CONTRACTORS
+        ========================================== -->
+        <div id="section-contractors" class="section">
+            <div class="section-card">
+                <div class="section-header"><h3 id="contractorsTitle"><i class="fas fa-handshake text-acwa-purple mr-2"></i> Contractors</h3><span class="badge" id="contractorsBadge">CONTRACTORS</span></div>
+                <form id="contractorForm" onsubmit="saveContractor(event)">
+                    <div class="form-grid">
+                        <div class="form-group"><label id="contIdLabel">ID <span class="text-red-500">*</span></label>
+                            <input type="text" id="contractorId" placeholder="CON-001" required></div>
+                        <div class="form-group"><label id="contReasonLabel">Reason <span class="text-red-500">*</span></label>
+                            <input type="text" id="contractorReason" placeholder="Maintenance" required></div>
+                        <div class="form-group"><label id="contRefLabel">Reference</label>
+                            <input type="text" id="contractorRef" placeholder="REF-2026-001"></div>
+                        <div class="form-group"><label id="contPermitLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="contractorPermit" placeholder="P-2026-001" required></div>
+                        <div class="form-group"><label id="contReturnableLabel">Returnable</label>
+                            <select id="contractorReturnable">
+                                <option value="false" id="contReturnableNo">No</option>
+                                <option value="true" id="contReturnableYes">Yes</option>
+                            </select></div>
+                        <div class="form-group"><label id="contSignatureLabel">Signature</label>
+                            <select id="contractorSignature">
+                                <option value="false" id="contSigPending">Pending</option>
+                                <option value="true" id="contSigSigned">Signed</option>
+                            </select></div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary" id="contSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="contResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+                <div id="contractorSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Contractor saved!</div>
+                <div class="table-wrapper mt-4">
+                    <table>
+                        <thead><tr>
+                            <th id="contTableId">ID</th>
+                            <th id="contTableReason">Reason</th>
+                            <th id="contTableRef">Reference</th>
+                            <th id="contTableReturnable">Returnable</th>
+                            <th id="contTableSignature">Signature</th>
+                            <th id="contTablePermit">Permit #</th>
+                            <th id="contTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="contractorsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: APPROVALS
+        ========================================== -->
+        <div id="section-approvals" class="section">
+            <div class="section-card">
+                <div class="section-header"><h3 id="approvalsTitle"><i class="fas fa-check-double text-acwa-purple mr-2"></i> Approvals</h3><span class="badge" id="approvalsBadge">APPROVALS</span></div>
+                <form id="approvalForm" onsubmit="saveApproval(event)">
+                    <div class="form-grid">
+                        <div class="form-group"><label id="appIdLabel">ID <span class="text-red-500">*</span></label>
+                            <input type="text" id="approvalId" placeholder="APP-001" required></div>
+                        <div class="form-group"><label id="appDivisionLabel">Division <span class="text-red-500">*</span></label>
+                            <input type="text" id="divisionName" placeholder="Quality" required></div>
+                        <div class="form-group"><label id="appApproverLabel">Approver <span class="text-red-500">*</span></label>
+                            <input type="text" id="approverName" placeholder="Dr. El Alaoui" required></div>
+                        <div class="form-group"><label id="appPermitLabel">Permit # <span class="text-red-500">*</span></label>
+                            <input type="text" id="approvalPermit" placeholder="P-2026-001" required></div>
+                        <div class="form-group"><label id="appSignatureLabel">Signature</label>
+                            <select id="approvalSignature">
+                                <option value="false" id="appSigPending">Pending</option>
+                                <option value="true" id="appSigSigned">Signed</option>
+                            </select></div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary" id="appSaveBtn"><i class="fas fa-save"></i> Save</button>
+                        <button type="reset" class="btn btn-outline" id="appResetBtn"><i class="fas fa-undo"></i> Reset</button>
+                    </div>
+                </form>
+                <div id="approvalSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Approval saved!</div>
+                <div class="table-wrapper mt-4">
+                    <table>
+                        <thead><tr>
+                            <th id="appTableId">ID</th>
+                            <th id="appTableDivision">Division</th>
+                            <th id="appTableApprover">Approver</th>
+                            <th id="appTableSignature">Signature</th>
+                            <th id="appTablePermit">Permit #</th>
+                            <th id="appTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="approvalsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: USERS (admin only)
+        ========================================== -->
+        <div id="section-users" class="section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="usersSectionTitle"><i class="fas fa-users-gear text-acwa-purple mr-2"></i> <span id="usersTitleText">Users Management</span></h3>
+                    <button class="btn btn-primary btn-sm" onclick="openUserModal()"><i class="fas fa-user-plus"></i> <span id="addUserBtnText">Add user</span></button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr>
+                            <th id="uTableId">#</th>
+                            <th id="uTableName">Name</th>
+                            <th id="uTableEmail">Email</th>
+                            <th id="uTableRole">Role</th>
+                            <th id="uTableCreated">Created</th>
+                            <th id="uTableActions">Actions</th>
+                        </tr></thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: REPORTS
+        ========================================== -->
+        <div id="section-reports" class="section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="reportsTitle"><i class="fas fa-chart-bar text-acwa-purple mr-2"></i> PDF Reports</h3>
+                    <span class="badge" id="reportsBadge">Generation</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border border-[#f0ecf4]">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-acwa-purple rounded-xl flex items-center justify-center text-white"><i class="fas fa-file-alt"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportPermisTitle">Permits</h4>
+                                <p class="text-xs text-gray-400" id="reportPermisDesc">Complete list</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-full" onclick="generateReport('permits')" id="reportPermisBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border border-[#f0ecf4]">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white"><i class="fas fa-cubes"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportMateriauxTitle">Materials</h4>
+                                <p class="text-xs text-gray-400" id="reportMateriauxDesc">Full inventory</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-success w-full" onclick="generateReport('materials')" id="reportMateriauxBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border border-[#f0ecf4]">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white"><i class="fas fa-truck"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportTransportsTitle">Transports</h4>
+                                <p class="text-xs text-gray-400" id="reportTransportsDesc">Delivery tracking</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-warning w-full" onclick="generateReport('transports')" id="reportTransportsBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border border-[#f0ecf4]">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white"><i class="fas fa-handshake"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportContractantsTitle">Contractors</h4>
+                                <p class="text-xs text-gray-400" id="reportContractantsDesc">Contractors list</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-full" style="background:#3498db;" onclick="generateReport('contractors')" id="reportContractantsBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border border-[#f0ecf4]">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center text-white"><i class="fas fa-check-double"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportApprobationsTitle">Approvals</h4>
+                                <p class="text-xs text-gray-400" id="reportApprobationsDesc">Approval tracking</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-full" style="background:#8e44ad;" onclick="generateReport('approvals')" id="reportApprobationsBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border-2 border-acwa-purple">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white"><i class="fas fa-file-pdf"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm" id="reportCompletTitle">Complete Report</h4>
+                                <p class="text-xs text-gray-400" id="reportCompletDesc">All data</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger w-full" onclick="generateReport('all')" id="reportCompletBtn">
+                            <i class="fas fa-file-pdf"></i> Generate PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-[#faf8fc] rounded-xl p-5 border-2 border-green-500">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center text-white"><i class="fas fa-file-excel"></i></div>
+                            <div>
+                                <h4 class="font-bold text-[#3F3F46] text-sm">Excel Export</h4>
+                                <p class="text-xs text-gray-400">All permits + materials + photos</p>
+                            </div>
+                        </div>
+                        <button class="btn w-full" style="background:#217346;color:#fff;" onclick="exportExcel()" id="excelExportBtn">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="mt-6">
+                    <div class="section-header">
+                        <h3 id="historyTitle"><i class="fas fa-history text-acwa-purple mr-2"></i> PDF History</h3>
+                        <span class="badge" id="pdfHistoryCount">0</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th id="historyFile">File</th>
+                                    <th id="historyType">Type</th>
+                                    <th id="historyDate">Date</th>
+                                    <th id="historyActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pdfHistoryTable">
+                                <tr><td colspan="4" class="text-center py-8 text-gray-400">
+                                        <i class="fas fa-inbox text-2xl block mb-2"></i>No PDF generated
+                                    </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        SECTION: PROFILE
+        ========================================== -->
+        <div id="section-profile" class="section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h3 id="profileTitle"><i class="fas fa-user-cog text-acwa-purple mr-2"></i> My Profile</h3>
+                    <span class="badge" id="profileBadge">Account</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="form-group"><label id="profileNameLabel">Name</label><input type="text" id="profileName" disabled class="bg-gray-100"></div>
+                        <div class="form-group"><label id="profileEmailLabel">Email</label><input type="email" id="profileEmail" disabled class="bg-gray-100"></div>
+                        <div class="form-group"><label id="profileRoleLabel">Role</label><input type="text" id="profileRole" disabled class="bg-gray-100"></div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-[#3F3F46] mb-4" id="profileChangePasswordTitle">🔑 Change Password</h4>
+                        <form id="passwordForm" onsubmit="changePassword(event)">
+                            <div class="form-group"><label id="profileCurrentPasswordLabel">Current Password <span class="text-red-500">*</span></label>
+                                <input type="password" id="currentPassword" placeholder="••••••••" required></div>
+                            <div class="form-group"><label id="profileNewPasswordLabel">New Password <span class="text-red-500">*</span></label>
+                                <input type="password" id="newPassword" placeholder="••••••••" required minlength="6"></div>
+                            <div class="form-group"><label id="profileConfirmPasswordLabel">Confirm Password <span class="text-red-500">*</span></label>
+                                <input type="password" id="confirmPassword" placeholder="••••••••" required minlength="6"></div>
+                            <button type="submit" class="btn btn-primary mt-2" id="profileUpdateBtn"><i class="fas fa-save"></i> Update</button>
+                        </form>
+                        <div id="passwordSuccess" class="hidden bg-green-50 border-l-4 border-green-500 text-green-700 p-3 rounded-lg mt-4">✅ Password updated!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ============================================
+    JAVASCRIPT
+    ============================================ -->
+    <script>
+        // ============================================
+        // DATA - chargées depuis MySQL via l'API
+        // ============================================
+        let permits = [];
+        let materials = [];
+        let transports = [];
+        let security = [];
+        let contractors = [];
+        let approvals = [];
+        let pdfHistory = [];
+
+        // ===== Helper API =====
+        async function api(path, options = {}) {
+            const token = localStorage.getItem('acwa_token');
+            let headers = { ...(options.headers || {}) };
+            if (!options.noJsonHeader) headers['Content-Type'] = 'application/json';
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            const response = await fetch('/api' + path, { ...options, headers });
+
+            if (response.status === 401) {
+                localStorage.removeItem('acwa_token');
+                localStorage.removeItem('acwa_user');
+                window.location.href = 'login.html';
+                throw new Error('Session expirée');
+            }
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur serveur');
+            }
+            return data;
+        }
+
+        // ============================================
+        // SESSION
+        // ============================================
+        if (!localStorage.getItem('acwa_token')) {
+            window.location.href = 'login.html';
+        }
+        let user = JSON.parse(localStorage.getItem('acwa_user') || 'null');
+        function applyUserUI(u) {
+            if (!u) return;
+            document.getElementById('userName').textContent = u.name || 'Administrator';
+            document.getElementById('userRole').textContent = u.role || 'Admin';
+            document.getElementById('userAvatar').textContent = (u.name || 'A')[0].toUpperCase();
+            document.getElementById('profileName').value = u.name || 'Administrator';
+            document.getElementById('profileEmail').value = u.email || 'admin@acwa.com';
+            document.getElementById('profileRole').value = u.role || 'Admin';
+            // Menu Utilisateurs visible uniquement pour les admins
+            document.getElementById('menuUsersItem').style.display = (u.role === 'admin') ? '' : 'none';
+        }
+        applyUserUI(user);
+        // Rafraîchir le rôle/session depuis le serveur (évite un localStorage obsolète)
+        api('/me')
+            .then(me => {
+                user = me;
+                localStorage.setItem('acwa_user', JSON.stringify(me));
+                applyUserUI(user);
+            })
+            .catch(() => {});
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message, title) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title || 'Success';
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ============================================
+        // SIDEBAR
+        // ============================================
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('show');
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        function openModal(content) {
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+
+        // ============================================
+        // USER MANAGEMENT (admin)
+        // ============================================
+        let users = [];
+
+        async function loadUsers() {
+            try {
+                users = await api('/users');
+                renderUsers();
+            } catch (e) { showToast('❌ ' + e.message, 'Error'); }
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersTable');
+            const me = JSON.parse(localStorage.getItem('acwa_user') || 'null');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td><strong>${u.name}</strong></td>
+                    <td>${u.email}</td>
+                    <td>${u.role === 'admin'
+                        ? '<span class="badge" style="background:#ede7f6;color:#6a3fb5;">ADMIN</span>'
+                        : '<span class="badge" style="background:#f0f0f2;color:#666;">USER</span>'}</td>
+                    <td>${fmtDate(u.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-outline btn-xs" onclick='openUserModal(${u.id})' title="Edit"><i class="fas fa-edit"></i></button>
+                        ${me && me.id === u.id ? '' : ` <button class="btn btn-danger btn-xs" onclick="deleteUser(${u.id})" title="Delete"><i class="fas fa-trash"></i></button>`}
+                    </td>
+                </tr>`).join('');
+        }
+
+        function openUserModal(id) {
+            const editing = id ? users.find(u => u.id === id) : null;
+            const t = translations[currentLang];
+            openModal(`
+                <h3 style="margin-bottom:16px;"><i class="fas fa-user-gear text-acwa-purple mr-2"></i> ${editing ? (t.userModalEdit || 'Edit user') : (t.userModalAdd || 'Add user')}</h3>
+                <form onsubmit="saveUser(event)" id="userForm">
+                    <input type="hidden" id="uEditId" value="${editing ? editing.id : ''}">
+                    <div class="form-group"><label>${t.userNameLabel}</label>
+                        <input type="text" id="uName" value="${editing ? editing.name : ''}" required></div>
+                    <div class="form-group"><label>${t.userEmailLabel}</label>
+                        <input type="email" id="uEmail" value="${editing ? editing.email : ''}" required></div>
+                    <div class="form-group"><label>${t.userRoleLabel}</label>
+                        <select id="uRole">
+                            <option value="user" ${editing && editing.role === 'user' ? 'selected' : ''}>${t.roleUser}</option>
+                            <option value="admin" ${editing && editing.role === 'admin' ? 'selected' : ''}>${t.roleAdmin}</option>
+                        </select></div>
+                    <div class="form-group"><label>${t.userPasswordLabel} ${editing ? `<small style="color:#999;">(${t.userPasswordHint})</small>` : '<span class="text-red-500">*</span>'}</label>
+                        <input type="password" id="uPassword" minlength="6" ${editing ? '' : 'required'} placeholder="••••••"></div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> ${t.saveBtnGeneric}</button>
+                        <button type="button" class="btn btn-outline" onclick="closeModal()">${t.cancelBtn}</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        async function saveUser(event) {
+            event.preventDefault();
+            const id = document.getElementById('uEditId').value;
+            const body = {
+                name: document.getElementById('uName').value.trim(),
+                email: document.getElementById('uEmail').value.trim(),
+                role: document.getElementById('uRole').value
+            };
+            const pwd = document.getElementById('uPassword').value;
+            if (pwd) body.password = pwd;
+
+            try {
+                if (id) {
+                    if (!pwd) delete body.password;
+                    await api('/users/' + id, { method: 'PUT', body: JSON.stringify(body) });
+                    showToast('✅ User updated', 'Success');
+                } else {
+                    await api('/users', { method: 'POST', body: JSON.stringify(body) });
+                    showToast('✅ User created', 'Success');
+                }
+                closeModal();
+                loadUsers();
+            } catch (e) {
+                showToast('❌ ' + e.message, 'Error');
+            }
+        }
+
+        async function deleteUser(id) {
+            const t = translations[currentLang];
+            if (!confirm(t.confirmDeleteUser)) return;
+            try {
+                await api('/users/' + id, { method: 'DELETE' });
+                showToast('✅ User deleted', 'Success');
+                loadUsers();
+            } catch (e) {
+                showToast('❌ ' + e.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('section-' + section);
+            if (target) target.classList.add('active');
+
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.sidebar-menu a[data-section]').forEach(a => {
+                if (a.dataset.section === section) a.classList.add('active');
+            });
+
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+
+            const titles = {
+                dashboard: ['Overview', 'Welcome to the regional control center.'],
+                permits: ['Permits', 'Permit Management'],
+                materials: ['Materials', 'Materials Management'],
+                transport: ['Transport', 'Transport Tracking'],
+                security: ['Security', 'Security Checks'],
+                contractors: ['Contractors', 'Contractor Management'],
+                approvals: ['Approvals', 'Approval Tracking'],
+                reports: ['PDF Reports', 'Report Generation'],
+                users: ['Users', 'Account Management'],
+                profile: ['My Profile', 'Manage your account']
+            };
+            if (titles[section]) {
+                document.getElementById('pageTitle').textContent = titles[section][0];
+                document.getElementById('pageSubtitle').textContent = titles[section][1];
+            }
+
+            loadAll();
+            if (section === 'reports') loadPDFHistory();
+            if (section === 'users' && user && user.role === 'admin') loadUsers();
+        }
+
+        // ============================================
+        // LOAD ALL (depuis MySQL)
+        // ============================================
+        async function loadAll() {
+            await Promise.all([
+                loadPermits(),
+                loadMaterials(),
+                loadTransport(),
+                loadSecurity(),
+                loadContractors(),
+                loadApprovals()
+            ]);
+            loadDashboard();
+            loadPDFHistory();
+        }
+
+        // ============================================
+        // DATE FORMAT HELPERS
+        // ============================================
+        function fmtDate(d) {
+            if (!d) return 'N/A';
+            const dt = new Date(d);
+            return isNaN(dt) ? d : dt.toLocaleDateString();
+        }
+        function fmtDateTime(d) {
+            if (!d) return 'N/A';
+            const dt = new Date(d);
+            return isNaN(dt) ? d : dt.toLocaleString();
+        }
+
+        // ============================================
+        // GET STATUS LABEL
+        // ============================================
+        function getStatusLabel(status) {
+            const labels = {
+                'pending': 'Pending',
+                'approved': 'Approved',
+                'returnable': 'Returnable',
+                'closed': 'Closed',
+                'archived': 'Archived'
+            };
+            return labels[status] || status;
+        }
+
+        // ============================================
+        // LOAD DASHBOARD
+        // ============================================
+        function loadDashboard() {
+            const total = permits.length;
+            const inCount = permits.filter(p => p.type === 'IN').length;
+            const outCount = permits.filter(p => p.type === 'OUT').length;
+            const pending = permits.filter(p => p.status === 'pending').length;
+            const closed = permits.filter(p => p.status === 'closed' || p.status === 'archived').length;
+            const pdfCount = pdfHistory.length;
+
+            document.getElementById('totalPermits').textContent = total;
+            document.getElementById('inCount').textContent = inCount;
+            document.getElementById('outCount').textContent = outCount;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('closedCount').textContent = closed;
+            document.getElementById('pdfCount').textContent = pdfCount;
+            document.getElementById('permitsBadge').textContent = total;
+
+            const tbody = document.getElementById('recentPermitsTable');
+            const recent = permits.slice(0, 5);
+
+            if (recent.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-2xl block mb-2"></i>No permits</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recent.map(p => `
+                    <tr>
+                        <td class="font-semibold text-primary">${p.permitNumber}</td>
+                        <td>${p.companyName}</td>
+                        <td>${p.substance || 'N/A'}</td>
+                        <td><span class="status ${p.type === 'IN' ? 'approved' : 'pending'}">${p.type}</span></td>
+                        <td><span class="status ${p.status}">${getStatusLabel(p.status)}</span></td>
+                        <td>
+                            <button class="btn btn-primary btn-xs" onclick="viewPermit('${p.permitNumber}')"><i class="fas fa-eye"></i></button>
+                            ${p.status === 'pending' ? `<button class="btn btn-success btn-xs" onclick="confirmPermit('${p.permitNumber}')"><i class="fas fa-check"></i></button>` : ''}
+                            ${p.status === 'returnable' ? `<button class="btn btn-warning btn-xs" onclick="closePermit('${p.permitNumber}')"><i class="fas fa-times"></i> Close</button>` : ''}
+                            ${p.status === 'closed' ? `<button class="btn btn-outline btn-xs" onclick="downloadPermitPDF('${p.permitNumber}')"><i class="fas fa-download"></i></button>` : ''}
+                            <button class="btn btn-danger btn-xs" onclick="deletePermit('${p.permitNumber}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // ============================================
+        // LOAD PERMITS (depuis MySQL)
+        // ============================================
+        async function loadPermits() {
+            try {
+                permits = await api('/permits');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('allPermitsTable');
+
+            if (permits.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="7" class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-2xl block mb-2"></i>No permits</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = permits.map(p => `
+                    <tr>
+                        <td class="font-semibold text-primary">${p.permitNumber}</td>
+                        <td>${p.companyName}</td>
+                        <td>${p.substance || 'N/A'}</td>
+                        <td><span class="status ${p.type === 'IN' ? 'approved' : 'pending'}">${p.type}</span></td>
+                        <td>${fmtDate(p.permitDate)}</td>
+                        <td><span class="status ${p.status}">${getStatusLabel(p.status)}</span></td>
+                        <td>
+                            <button class="btn btn-primary btn-xs" onclick="viewPermit('${p.permitNumber}')"><i class="fas fa-eye"></i></button>
+                            ${p.status === 'pending' ? `<button class="btn btn-success btn-xs" onclick="confirmPermit('${p.permitNumber}')"><i class="fas fa-check"></i></button>` : ''}
+                            ${p.status === 'returnable' ? `<button class="btn btn-warning btn-xs" onclick="closePermit('${p.permitNumber}')"><i class="fas fa-times"></i> Close</button>` : ''}
+                            ${p.status === 'closed' ? `<button class="btn btn-outline btn-xs" onclick="downloadPermitPDF('${p.permitNumber}')"><i class="fas fa-download"></i></button>` : ''}
+                            <button class="btn btn-danger btn-xs" onclick="deletePermit('${p.permitNumber}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // ============================================
+        // SAVE PERMIT → MySQL
+        // ============================================
+        async function savePermit(e) {
+            e.preventDefault();
+            const data = {
+                permitNumber: document.getElementById('permitNumber').value.trim(),
+                permitDate: document.getElementById('permitDate').value,
+                companyName: document.getElementById('companyName').value.trim(),
+                companyAddress: document.getElementById('companyAddress').value.trim(),
+                substance: document.getElementById('substance').value.trim(),
+                type: document.getElementById('permitType').value
+            };
+
+            try {
+                await api('/permits', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('permitSuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('permitSuccess').classList.add('hidden'), 3000);
+                document.getElementById('permitForm').reset();
+                showToast(`✅ Permit ${data.permitNumber} created!`, 'Success');
+                await loadAll();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // VIEW PERMIT
+        // ============================================
+        function viewPermit(permitNumber) {
+            const p = permits.find(p => p.permitNumber === permitNumber);
+            if (!p) { showToast('Permit not found', 'Error'); return; }
+
+            const content = `
+                    <h3 class="text-lg font-bold text-[#3F3F46] mb-4">📄 ${p.permitNumber}</h3>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div><span class="text-gray-400">Company</span><br><strong>${p.companyName}</strong></div>
+                        <div><span class="text-gray-400">Destination</span><br><strong>${p.substance || 'N/A'}</strong></div>
+                        <div><span class="text-gray-400">Type</span><br><strong>${p.type}</strong></div>
+                        <div><span class="text-gray-400">Status</span><br><strong>${getStatusLabel(p.status)}</strong></div>
+                        <div class="col-span-2"><span class="text-gray-400">Address</span><br><strong>${p.companyAddress || 'N/A'}</strong></div>
+                        <div class="col-span-2"><span class="text-gray-400">Date</span><br><strong>${fmtDate(p.permitDate)}</strong></div>
+                    </div>
+                    <div class="mt-4 flex gap-3 flex-wrap">
+                        ${p.status === 'pending' ? `<button class="btn btn-success" onclick="confirmPermit('${p.permitNumber}');closeModal();"><i class="fas fa-check"></i> Confirm</button>` : ''}
+                        ${p.status === 'returnable' ? `<button class="btn btn-warning" onclick="closePermit('${p.permitNumber}');closeModal();"><i class="fas fa-times"></i> Close</button>` : ''}
+                        ${p.status === 'closed' ? `<button class="btn btn-outline" onclick="downloadPermitPDF('${p.permitNumber}');closeModal();"><i class="fas fa-download"></i> PDF</button>` : ''}
+                        <button class="btn btn-danger" onclick="deletePermit('${p.permitNumber}');closeModal();"><i class="fas fa-trash"></i> Delete</button>
+                        <button class="btn btn-outline" onclick="closeModal()"><i class="fas fa-times"></i> Close</button>
+                    </div>
+                `;
+            openModal(content);
+        }
+
+        // ============================================
+        // CONFIRM PERMIT → RETURNABLE (MySQL)
+        // ============================================
+        async function confirmPermit(permitNumber) {
+            if (!confirm(`Confirm permit ${permitNumber} ?\nIt will change to "Returnable" status.`)) return;
+
+            try {
+                await api(`/permits/${encodeURIComponent(permitNumber)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'returnable' })
+                });
+                showToast(`✅ Permit ${permitNumber} confirmed! (Returnable)`, 'Success');
+                await loadAll();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // CLOSE PERMIT → CLOSED + PDF (MySQL)
+        // ============================================
+        async function closePermit(permitNumber) {
+            if (!confirm(`Close permit ${permitNumber} ?\nThis will generate a PDF and set status to "Closed".`)) return;
+
+            const p = permits.find(p => p.permitNumber === permitNumber);
+            if (!p) { showToast('Permit not found', 'Error'); return; }
+
+            generatePermitPDF(p);
+
+            try {
+                await api(`/permits/${encodeURIComponent(permitNumber)}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'closed' })
+                });
+                showToast(`✅ Permit ${permitNumber} closed! PDF generated.`, 'Success');
+                await loadAll();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // DELETE PERMIT (MySQL)
+        // ============================================
+        async function deletePermit(permitNumber) {
+            if (!confirm(`Delete permit ${permitNumber} ?`)) return;
+            try {
+                await api(`/permits/${encodeURIComponent(permitNumber)}`, { method: 'DELETE' });
+                showToast(`Permit ${permitNumber} deleted`, 'Deleted');
+                await loadAll();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // SEARCH PERMIT
+        // ============================================
+        function searchPermit() {
+            const query = document.getElementById('searchPermit').value.trim();
+            const type = document.getElementById('searchType').value;
+            const status = document.getElementById('searchStatus').value;
+
+            if (!query && !type && !status) {
+                loadDashboard();
+                return;
+            }
+
+            let results = permits.filter(p => {
+                let match = true;
+                if (query) {
+                    const searchLower = query.toLowerCase();
+                    match = match && (
+                        p.permitNumber.toLowerCase().includes(searchLower) ||
+                        p.companyName.toLowerCase().includes(searchLower) ||
+                        (p.substance || '').toLowerCase().includes(searchLower)
+                    );
+                }
+                if (type) match = match && p.type === type;
+                if (status) match = match && p.status === status;
+                return match;
+            });
+
+            const tbody = document.getElementById('recentPermitsTable');
+
+            if (results.length === 0) {
+                tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-10 text-gray-400">
+                                <i class="fas fa-search text-3xl block mb-3 text-primary/50"></i>
+                                <span class="text-sm font-medium">No results for "<strong>${query || '...'}</strong>"</span>
+                                <br>
+                                <span class="text-xs text-gray-400">Check permit number, company or destination</span>
+                            </td>
+                        </tr>
+                    `;
+                return;
+            }
+
+            tbody.innerHTML = results.map(p => `
+                    <tr class="hover:bg-[#faf8fc] transition-colors">
+                        <td class="font-semibold text-primary">${p.permitNumber}</td>
+                        <td>${p.companyName}</td>
+                        <td>${p.substance || 'N/A'}</td>
+                        <td><span class="status ${p.type === 'IN' ? 'approved' : 'pending'}">${p.type}</span></td>
+                        <td><span class="status ${p.status}">${getStatusLabel(p.status)}</span></td>
+                        <td>
+                            <button class="btn btn-primary btn-xs" onclick="viewPermit('${p.permitNumber}')"><i class="fas fa-eye"></i></button>
+                            ${p.status === 'pending' ? `<button class="btn btn-success btn-xs" onclick="confirmPermit('${p.permitNumber}')"><i class="fas fa-check"></i></button>` : ''}
+                            ${p.status === 'returnable' ? `<button class="btn btn-warning btn-xs" onclick="closePermit('${p.permitNumber}')"><i class="fas fa-times"></i> Close</button>` : ''}
+                            ${p.status === 'closed' ? `<button class="btn btn-outline btn-xs" onclick="downloadPermitPDF('${p.permitNumber}')"><i class="fas fa-download"></i></button>` : ''}
+                            <button class="btn btn-danger btn-xs" onclick="deletePermit('${p.permitNumber}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // ============================================
+        // LOGO POUR LES PDFS
+        // ============================================
+        let _logoCache = null;
+        async function getLogoInfo() {
+            if (_logoCache !== null) return _logoCache;
+            try {
+                const resp = await fetch('logo-acwa.png');
+                if (!resp.ok) throw new Error('logo introuvable');
+                const blob = await resp.blob();
+                const data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                const dims = await new Promise(resolve => {
+                    const img = new Image();
+                    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+                    img.onerror = () => resolve({ w: 400, h: 400 });
+                    img.src = data;
+                });
+                _logoCache = { data: data, w: dims.w, h: dims.h };
+            } catch (e) {
+                _logoCache = null;
+            }
+            return _logoCache;
+        }
+        function placeLogo(doc, info, centerX, yTop, maxW, maxH) {
+            if (!info) return;
+            const ratio = Math.min(maxW / info.w, maxH / info.h);
+            const w = info.w * ratio;
+            const h = info.h * ratio;
+            doc.addImage(info.data, 'PNG', centerX - w / 2, yTop, w, h);
+        }
+
+        // ============================================
+        // GENERATE PERMIT PDF (rapport complet)
+        // ============================================
+        async function generatePermitPDF(p) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const logo = await getLogoInfo();
+
+            // ===== BANDEAU AVEC LOGO =====
+            doc.setFillColor(145, 103, 208);
+            doc.rect(0, 0, 210, 35, 'F');
+            placeLogo(doc, logo, 105, 3.5, 50, 28);
+            doc.line(14, 38, 196, 38);
+
+            doc.setTextColor(63, 63, 70);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`PERMIT N° ${p.permitNumber}`, 105, 52, { align: 'center' });
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Generated on : ${new Date().toLocaleString()}`, 105, 60, { align: 'center' });
+
+            let y = 72;
+
+            // ===== SECTION : DÉTAILS DU PERMIS =====
+            doc.autoTable({
+                startY: y,
+                head: [['PERMIT INFORMATION', '']],
+                body: [
+                    ['Permit #', p.permitNumber],
+                    ['Company', p.companyName || 'N/A'],
+                    ['Address', p.companyAddress || 'N/A'],
+                    ['Destination', p.substance || 'N/A'],
+                    ['Type', p.type || 'N/A'],
+                    ['Date', fmtDate(p.permitDate)],
+                    ['Status', getStatusLabel(p.status)],
+                    ['Closed Date', (p.status === 'closed' && p.updatedAt) ? new Date(p.updatedAt).toLocaleString() : 'Not closed']
+                ],
+                theme: 'striped',
+                headStyles: { fillColor: [145, 103, 208], textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold', halign: 'center' },
+                styles: { fontSize: 9, cellPadding: 3 },
+                columnStyles: { 0: { cellWidth: 55, fontStyle: 'bold' }, 1: { cellWidth: 127 } }
+            });
+            y = doc.lastAutoTable.finalY + 12;
+
+            // Helper pour les sous-sections
+            const num = p.permitNumber;
+            const addSection = (title, head, body) => {
+                if (!body.length) return;
+                if (y > 235) { doc.addPage(); y = 20; }
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(145, 103, 208);
+                doc.text(title, 14, y);
+                doc.setDrawColor(200, 180, 220);
+                doc.setLineWidth(0.5);
+                doc.line(14, y + 2, 196, y + 2);
+                y += 6;
+                doc.autoTable({
+                    startY: y,
+                    head: [head],
+                    body: body,
+                    theme: 'striped',
+                    headStyles: { fillColor: [63, 63, 70], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+                    styles: { fontSize: 8, cellPadding: 2.5 }
+                });
+                y = doc.lastAutoTable.finalY + 12;
+            };
+
+            // ===== MATÉRIAUX =====
+            addSection('MATERIALS', ['Equipment', 'Description', 'Qty', 'Unit Wt (kg)', 'Weight (kg)', 'Type'],
+                materials.filter(m => m.permitNumber === num).map(m => [
+                    m.equipmentNo || 'N/A', m.description || 'N/A', m.quantity ?? 'N/A',
+                    m.unitWeight != null ? `${m.unitWeight} kg` : 'N/A',
+                    m.weight != null ? `${m.weight} kg` : 'N/A', m.type || 'N/A'
+                ]));
+
+            // ===== MATERIAUX PHOTOS =====
+            const materialsWithPhotos = materials.filter(m => m.permitNumber === num && m.photo);
+            if (materialsWithPhotos.length) {
+                const photos = [];
+                for (const m of materialsWithPhotos) {
+                    let img = null;
+                    try {
+                        const raw = await fetch(m.photo);
+                        const blob = await raw.blob();
+                        img = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => resolve(null);
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (e) { img = null; }
+                    photos.push({ label: m.equipmentNo + ' - ' + (m.description || 'Material'), img });
+                }
+                if (photos.some(p => p.img)) {
+                    if (y > 200) { doc.addPage(); y = 20; }
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(145, 103, 208);
+                    doc.text('MATERIALS PHOTOS', 14, y);
+                    doc.setDrawColor(200, 180, 220);
+                    doc.setLineWidth(0.5);
+                    doc.line(14, y + 2, 196, y + 2);
+                    y += 8;
+                    const imgW = 50, imgH = 50;
+                    const perRow = 3;
+                    const gap = 10;
+                    let rowY = y;
+                    let col = 0;
+                    for (const p of photos) {
+                        if (!p.img) continue;
+                        if (col > 0 && (14 + col * (imgW + gap) + imgW > 196)) { col = 0; rowY += imgH + 16; if (rowY > 260) { doc.addPage(); rowY = 20; } }
+                        const x2 = 14 + col * (imgW + gap);
+                        doc.setFillColor(245, 240, 250);
+                        doc.roundedRect(x2, rowY, imgW + 10, imgH + 12, 3, 3, 'F');
+                        try {
+                            const fmt = p.img.indexOf('image/png') > -1 ? 'PNG' : 'JPEG';
+                            doc.addImage(p.img, fmt, x2 + 5, rowY + 5, imgW, imgH);
+                        } catch (e) {}
+                        doc.setFontSize(7);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(80, 80, 80);
+                        doc.text(String(p.label).substring(0, 28), x2 + 5 + imgW / 2, rowY + imgH + 12, { align: 'center' });
+                        col++;
+                    }
+                    y = rowY + imgH + 20;
+                }
+            }
+
+            // ===== TRANSPORTS =====
+            addSection('TRANSPORTS', ['Driver', 'Vehicle Plate', 'Date/Time'],
+                transports.filter(t => t.permitNumber === num).map(t => [
+                    t.driverName || 'N/A', t.vehiclePlate || 'N/A', fmtDateTime(t.dateTime)
+                ]));
+
+            // ===== CONTRÔLES SÉCURITÉ =====
+            addSection('SECURITY CHECKS', ['Officer', 'Date/Time', 'Remarks', 'Signature'],
+                security.filter(s => s.permitNumber === num).map(s => [
+                    s.officerName || 'N/A', fmtDateTime(s.dateTime), s.remarks || 'N/A',
+                    s.signature ? 'Signed' : 'Pending'
+                ]));
+
+            // ===== CONTRACTANTS =====
+            addSection('CONTRACTORS', ['ID', 'Reason', 'Reference', 'Returnable', 'Signature'],
+                contractors.filter(c => c.permitNumber === num).map(c => [
+                    c.contractorId || 'N/A', c.reason || 'N/A', c.referenceNumber || 'N/A',
+                    c.returnable ? 'Yes' : 'No', c.signature ? 'Signed' : 'Pending'
+                ]));
+
+            // ===== APPROBATIONS =====
+            addSection('APPROVALS', ['ID', 'Division', 'Approver', 'Signature'],
+                approvals.filter(a => a.permitNumber === num).map(a => [
+                    a.approvalId || 'N/A', a.divisionName || 'N/A', a.approverName || 'N/A',
+                    a.signature ? 'Signed' : 'Pending'
+                ]));
+
+            // ===== CACHET OFFICIEL =====
+            if (y > 225) { doc.addPage(); y = 20; }
+            doc.setDrawColor(145, 103, 208);
+            doc.setLineWidth(1);
+            doc.rect(14, y, 182, 45);
+
+            doc.setDrawColor(145, 103, 208);
+            doc.setLineWidth(0.5);
+            doc.circle(105, y + 22, 15);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(145, 103, 208);
+            doc.text('OFFICIAL STAMP', 105, y + 12, { align: 'center' });
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100, 100, 100);
+            doc.text('Document certified by ACWA Operations', 105, y + 24, { align: 'center' });
+            doc.text(`Stamp : ${new Date().toLocaleDateString()}`, 105, y + 34, { align: 'center' });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(180, 180, 180);
+                doc.text('© 2026 ACWA Operations - All rights reserved', 105, 285, { align: 'center' });
+                doc.text(`Page ${i}/${pageCount}`, 195, 285, { align: 'right' });
+                doc.line(14, 278, 196, 278);
+            }
+
+            const fileName = `Permit_${p.permitNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            api('/pdf-history', {
+                method: 'POST',
+                body: JSON.stringify({ fileName, type: 'Permit', permitNumber: p.permitNumber })
+            }).then(() => { loadPDFHistory(); loadDashboard(); }).catch(() => {});
+
+            showToast(`📄 PDF generated: ${fileName}`, 'Download');
+            loadPDFHistory();
+            loadDashboard();
+        }
+
+        // ============================================
+        // DOWNLOAD PERMIT PDF
+        // ============================================
+        function downloadPermitPDF(permitNumber) {
+            const p = permits.find(p => p.permitNumber === permitNumber);
+            if (!p) { showToast('Permit not found', 'Error'); return; }
+            generatePermitPDF(p);
+        }
+
+        // ============================================
+        // EXPORT EXCEL (all permits + materials + photos)
+        // ============================================
+        async function exportExcel() {
+            try {
+                const token = localStorage.getItem('acwa_token');
+                showToast('Generating Excel...', 'Loading');
+                const response = await fetch('/api/export/permits-excel', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.status === 401) {
+                    localStorage.removeItem('acwa_token');
+                    localStorage.removeItem('acwa_user');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error || 'Export failed');
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'ACWA_Permits_' + new Date().toISOString().split('T')[0] + '.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast('Excel exported successfully', 'Download');
+            } catch (err) {
+                console.error('exportExcel error:', err);
+                showToast('Error exporting Excel: ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // GENERATE SEARCH PDF
+        // ============================================
+        async function generateSearchPDF() {
+            const query = document.getElementById('searchPermit').value.trim();
+            const type = document.getElementById('searchType').value;
+            const status = document.getElementById('searchStatus').value;
+
+            let results = permits.filter(p => {
+                let match = true;
+                if (query) {
+                    const searchLower = query.toLowerCase();
+                    match = match && (
+                        p.permitNumber.toLowerCase().includes(searchLower) ||
+                        p.companyName.toLowerCase().includes(searchLower) ||
+                        (p.substance || '').toLowerCase().includes(searchLower)
+                    );
+                }
+                if (type) match = match && p.type === type;
+                if (status) match = match && p.status === status;
+                return match;
+            });
+
+            if (results.length === 0) {
+                showToast('No results to export', 'Error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const logo = await getLogoInfo();
+
+            doc.setFillColor(145, 103, 208);
+            doc.rect(0, 0, 210, 30, 'F');
+            placeLogo(doc, logo, 105, 3, 42, 24);
+
+            doc.setTextColor(63, 63, 70);
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Search : ${query || 'All permits'}`, 14, 45);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Results : ${results.length} permits found`, 14, 55);
+            doc.text(`Generated on : ${new Date().toLocaleString()}`, 14, 63);
+
+            doc.line(14, 68, 196, 68);
+
+            doc.autoTable({
+                startY: 75,
+                head: [
+                    ['Permit #', 'Company', 'Destination', 'Type', 'Status']
+                ],
+                body: results.map(p => [
+                    p.permitNumber,
+                    p.companyName || 'N/A',
+                    p.substance || 'N/A',
+                    p.type || 'N/A',
+                    getStatusLabel(p.status)
+                ]),
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [145, 103, 208],
+                    textColor: [255, 255, 255],
+                    fontSize: 8,
+                    fontStyle: 'bold'
+                },
+                styles: { fontSize: 7, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 28 },
+                    1: { cellWidth: 40 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 25 }
+                }
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(180, 180, 180);
+                doc.text('© 2026 ACWA Operations - All rights reserved', 105, 285, { align: 'center' });
+                doc.text(`Page ${i}/${pageCount}`, 195, 285, { align: 'right' });
+            }
+
+            const fileName = `Search_${query || 'all'}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            api('/pdf-history', {
+                method: 'POST',
+                body: JSON.stringify({ fileName, type: 'Search' })
+            }).then(() => { loadPDFHistory(); loadDashboard(); }).catch(() => {});
+
+            showToast(`📄 Search PDF generated!`, 'Download');
+            loadPDFHistory();
+            loadDashboard();
+        }
+
+        // ============================================
+        // GENERATE DASHBOARD PDF
+        // ============================================
+        async function generateDashboardPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const logo = await getLogoInfo();
+
+            doc.setFillColor(145, 103, 208);
+            doc.rect(0, 0, 210, 35, 'F');
+
+            placeLogo(doc, logo, 105, 3.5, 50, 28);
+
+            doc.line(14, 38, 196, 38);
+
+            doc.setTextColor(63, 63, 70);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Management Report', 14, 52);
+
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Generated on : ${new Date().toLocaleString()}`, 14, 62);
+
+            const total = permits.length;
+            const inCount = permits.filter(p => p.type === 'IN').length;
+            const outCount = permits.filter(p => p.type === 'OUT').length;
+            const pending = permits.filter(p => p.status === 'pending').length;
+            const closed = permits.filter(p => p.status === 'closed' || p.status === 'archived').length;
+
+            const stats = [
+                ['📊 Total Permits', total],
+                ['📥 Entries (IN)', inCount],
+                ['📤 Exits (OUT)', outCount],
+                ['⏳ Pending', pending],
+                ['📁 Closed', closed]
+            ];
+
+            doc.autoTable({
+                startY: 70,
+                head: [['Statistic', 'Value']],
+                body: stats,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [145, 103, 208],
+                    textColor: [255, 255, 255],
+                    fontSize: 9,
+                    fontStyle: 'bold'
+                },
+                styles: { fontSize: 9, cellPadding: 5 },
+                columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 30 } },
+                didDrawPage: function(data) {
+                    doc.setFontSize(7);
+                    doc.setTextColor(180, 180, 180);
+                    doc.text('© 2026 ACWA Operations - All rights reserved', 105, 285, { align: 'center' });
+                }
+            });
+
+            const lastY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(63, 63, 70);
+            doc.text('Recent Permits', 14, lastY + 5);
+
+            const recent = permits.slice(-10).reverse();
+            if (recent.length > 0) {
+                doc.autoTable({
+                    startY: lastY + 10,
+                    head: [
+                        ['Permit #', 'Company', 'Type', 'Status']
+                    ],
+                    body: recent.map(p => [
+                        p.permitNumber,
+                        p.companyName || 'N/A',
+                        p.type || 'N/A',
+                        getStatusLabel(p.status)
+                    ]),
+                    theme: 'striped',
+                    headStyles: {
+                        fillColor: [100, 100, 100],
+                        textColor: [255, 255, 255],
+                        fontSize: 7,
+                        fontStyle: 'bold'
+                    },
+                    styles: { fontSize: 7, cellPadding: 3 },
+                    columnStyles: {
+                        0: { cellWidth: 30 },
+                        1: { cellWidth: 45 },
+                        2: { cellWidth: 20 },
+                        3: { cellWidth: 25 }
+                    }
+                });
+            }
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(180, 180, 180);
+                doc.text('© 2026 ACWA Operations - All rights reserved', 105, 285, { align: 'center' });
+                doc.text(`Page ${i}/${pageCount}`, 195, 285, { align: 'right' });
+                doc.line(14, 278, 196, 278);
+            }
+
+            const fileName = `Dashboard_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            api('/pdf-history', {
+                method: 'POST',
+                body: JSON.stringify({ fileName, type: 'Dashboard' })
+            }).then(() => { loadPDFHistory(); loadDashboard(); }).catch(() => {});
+
+            showToast(`📄 Dashboard PDF generated!`, 'Download');
+            loadPDFHistory();
+            loadDashboard();
+        }
+
+        // ============================================
+        // GENERATE REPORT
+        // ============================================
+        async function generateReport(type) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const logo = await getLogoInfo();
+
+            doc.setFillColor(145, 103, 208);
+            doc.rect(0, 0, 210, 25, 'F');
+            placeLogo(doc, logo, 183, 2.5, 34, 20);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('ACWA Operations - Report', 14, 10);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Official Document - Operations Management', 14, 18);
+
+            doc.setTextColor(63, 63, 70);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            const titles = {
+                'permits': 'Permits Report',
+                'materials': 'Materials Report',
+                'transports': 'Transports Report',
+                'contractors': 'Contractors Report',
+                'approvals': 'Approvals Report',
+                'all': 'Complete Report'
+            };
+            doc.text(titles[type] || 'Report', 14, 40);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on : ${new Date().toLocaleString()}`, 14, 50);
+            doc.text(`Total records : ${permits.length}`, 14, 58);
+
+            doc.line(14, 63, 196, 63);
+
+            let tableData = [];
+            let head = [];
+
+            if (type === 'permits' || type === 'all') {
+                tableData = permits.map(p => [
+                    p.permitNumber,
+                    p.companyName || 'N/A',
+                    p.substance || 'N/A',
+                    p.type || 'N/A',
+                    fmtDate(p.permitDate),
+                    getStatusLabel(p.status)
+                ]);
+                head = ['Permit #', 'Company', 'Destination', 'Type', 'Date', 'Status'];
+            } else if (type === 'materials') {
+                tableData = materials.map(m => [
+                    m.equipmentNo || 'N/A',
+                    m.permitNumber || 'N/A',
+                    m.description || 'N/A',
+                    m.quantity || 0,
+                    m.unitWeight || 0,
+                    m.weight || 0,
+                    m.type || 'N/A'
+                ]);
+                head = ['Equipment', 'Permit #', 'Description', 'Qty', 'Unit Wt (kg)', 'Weight (kg)', 'Type'];
+            } else if (type === 'transports') {
+                tableData = transports.map(t => [
+                    t.driverName || 'N/A',
+                    t.vehiclePlate || 'N/A',
+                    t.dateTime || 'N/A',
+                    t.permitNumber || 'N/A'
+                ]);
+                head = ['Driver', 'Vehicle', 'Date/Time', 'Permit #'];
+            } else if (type === 'contractors') {
+                tableData = contractors.map(c => [
+                    c.contractorId || 'N/A',
+                    c.reason || 'N/A',
+                    c.referenceNumber || 'N/A',
+                    c.returnable ? 'Yes' : 'No',
+                    c.signature ? 'Signed' : 'Pending'
+                ]);
+                head = ['ID', 'Reason', 'Reference', 'Returnable', 'Signature'];
+            } else if (type === 'approvals') {
+                tableData = approvals.map(a => [
+                    a.approvalId || 'N/A',
+                    a.divisionName || 'N/A',
+                    a.approverName || 'N/A',
+                    a.signature ? 'Signed' : 'Pending',
+                    a.permitNumber || 'N/A'
+                ]);
+                head = ['ID', 'Division', 'Approver', 'Signature', 'Permit #'];
+            }
+
+            if (tableData.length === 0) {
+                showToast('No data for this report', 'Info');
+                return;
+            }
+
+            doc.autoTable({
+                startY: 70,
+                head: [head],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [145, 103, 208], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+                styles: { fontSize: 7, cellPadding: 3 },
+                columnStyles: {
+                    0: { cellWidth: 28 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 20 }
+                }
+            });
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(7);
+                doc.setTextColor(150, 150, 150);
+                doc.text('© 2026 ACWA Operations - All rights reserved', 105, 285, { align: 'center' });
+                doc.text(`Page ${i}/${pageCount}`, 195, 285, { align: 'right' });
+            }
+
+            const fileName =
+            `Report_${type}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            api('/pdf-history', {
+                method: 'POST',
+                body: JSON.stringify({ fileName, type: type === 'all' ? 'Complete Report' : titles[type] })
+            }).then(() => { loadPDFHistory(); loadDashboard(); }).catch(() => {});
+
+            showToast(`📄 Report generated: ${fileName}`, 'Download');
+            loadPDFHistory();
+            loadDashboard();
+        }
+
+        // ============================================
+        // LOAD PDF HISTORY (depuis MySQL)
+        // ============================================
+        async function loadPDFHistory() {
+            try {
+                pdfHistory = await api('/pdf-history');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('pdfHistoryTable');
+            document.getElementById('pdfHistoryCount').textContent = pdfHistory.length;
+
+            if (pdfHistory.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-2xl block mb-2"></i>No PDF generated</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pdfHistory.map(h => `
+                    <tr>
+                        <td class="font-semibold"><i class="fas fa-file-pdf text-red-500 mr-2"></i>${h.fileName}</td>
+                        <td><span class="status approved">${h.type}</span></td>
+                        <td>${new Date(h.date).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-primary btn-xs" onclick="showToast('📄 ${h.fileName} downloaded', 'PDF')"><i class="fas fa-download"></i></button>
+                            <button class="btn btn-danger btn-xs" onclick="deletePDFHistory(${h.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // ============================================
+        // DELETE PDF HISTORY (MySQL)
+        // ============================================
+        async function deletePDFHistory(id) {
+            if (!confirm('Delete this entry from history?')) return;
+            try {
+                await api('/pdf-history/' + id, { method: 'DELETE' });
+                await loadPDFHistory();
+                showToast('Entry deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // CHANGE PASSWORD
+        // ============================================
+        async function changePassword(e) {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const message = document.getElementById('passwordSuccess');
+            const btn = document.querySelector('#passwordForm button[type="submit"]');
+
+            message.classList.add('hidden');
+
+            if (newPassword.length < 6) {
+                showToast('⚠️ New password must be at least 6 characters', 'Error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('⚠️ Passwords do not match', 'Error');
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem('acwa_user') || 'null');
+            if (!user) {
+                showToast('⚠️ User not found', 'Error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const result = await api('/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        currentPassword: currentPassword,
+                        newPassword: newPassword
+                    })
+                });
+
+                if (result.success) {
+                    message.classList.remove('hidden');
+                    message.textContent = '✅ ' + result.message;
+                    message.style.background = '#d4edda';
+                    message.style.color = '#155724';
+                    message.style.borderLeft = '4px solid #28a745';
+                    document.getElementById('passwordForm').reset();
+                    showToast('✅ Password updated successfully!', 'Success');
+                } else {
+                    showToast('❌ ' + (result.error || 'Error changing password'), 'Error');
+                }
+            } catch (error) {
+                showToast('❌ Unable to change password — server unreachable', 'Error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Update';
+        }
+
+        // ============================================
+        // CALCUL AUTOMATIQUE DU POIDS (Qty × Poids unitaire)
+        // ============================================
+        function calcWeight() {
+            const qty = parseFloat(document.getElementById('materialQty').value) || 0;
+            const uw = parseFloat(document.getElementById('materialUnitWeight').value) || 0;
+            document.getElementById('materialWeight').value =
+                Math.round(qty * uw * 100) / 100;
+        }
+
+        // ============================================
+        // SAVE MATERIAL → MySQL
+        // ============================================
+        async function saveMaterial(e) {
+            e.preventDefault();
+            const qty = parseInt(document.getElementById('materialQty').value) || 0;
+            const unitWeight = parseFloat(document.getElementById('materialUnitWeight').value) || 0;
+            const data = {
+                equipmentNo: document.getElementById('equipmentNo').value.trim(),
+                permitNumber: document.getElementById('materialPermit').value.trim(),
+                description: document.getElementById('materialDesc').value.trim(),
+                quantity: qty,
+                unitWeight: unitWeight,
+                weight: Math.round(qty * unitWeight * 100) / 100,
+                type: document.getElementById('materialType').value
+            };
+
+            try {
+                await api('/materials', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('materialSuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('materialSuccess').classList.add('hidden'), 3000);
+                document.getElementById('materialForm').reset();
+                showToast('✅ Material saved!', 'Success');
+                await loadMaterials();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // LOAD MATERIALS (depuis MySQL)
+        // ============================================
+        async function loadMaterials() {
+            try {
+                materials = await api('/materials');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('materialsTable');
+            if (materials.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="9" class="text-center py-8 text-gray-400">No materials</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = materials.map(m => `
+                    <tr>
+                        <td class="font-semibold">${m.equipmentNo}</td>
+                        <td>${m.permitNumber}</td>
+                        <td>${m.description}</td>
+                        <td>${m.quantity}</td>
+                        <td>${m.unitWeight} kg</td>
+                        <td>${m.weight} kg</td>
+                        <td><span class="status ${m.type === 'IN' ? 'approved' : 'pending'}">${m.type}</span></td>
+                        <td class="text-center">
+                            ${m.photo
+                                ? `<img src="${m.photo}" alt="Material photo" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #9167D0;" onclick="window.open('${m.photo}','_blank')" title="View photo">`
+                                : `<span class="text-gray-400 text-xs">No photo</span>`
+                            }
+                        </td>
+                        <td class="flex gap-1">
+                            <button class="btn btn-primary btn-xs" style="background:#9167D0;color:#fff;" onclick="uploadMaterialPhoto(${m.id})" title="Add photo"><i class="fas fa-camera"></i></button>
+                            <button class="btn btn-danger btn-xs" onclick="deleteMaterial(${m.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        function uploadMaterialPhoto(id) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.style.display = 'none';
+            document.body.appendChild(input);
+            input.onchange = async function() {
+                const file = input.files[0];
+                if (!file) { document.body.removeChild(input); return; }
+                const formData = new FormData();
+                formData.append('photo', file);
+                try {
+                    showToast('Uploading photo...', 'Loading');
+                    const result = await api('/materials/' + id + '/photo', {
+                        method: 'POST',
+                        body: formData,
+                        noJsonHeader: true
+                    });
+                    if (result.success) {
+                        await loadMaterials();
+                        showToast('Photo added', 'Success');
+                    } else {
+                        showToast('Error: ' + result.error, 'Error');
+                    }
+                } catch (err) {
+                    showToast('Error uploading photo', 'Error');
+                    console.error(err);
+                } finally {
+                    document.body.removeChild(input);
+                }
+            };
+            input.click();
+        }
+
+        async function deleteMaterial(id) {
+            if (!confirm('Delete this material?')) return;
+            try {
+                await api('/materials/' + id, { method: 'DELETE' });
+                await loadMaterials();
+                showToast('Material deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // SAVE TRANSPORT → MySQL
+        // ============================================
+        async function saveTransport(e) {
+            e.preventDefault();
+            const data = {
+                driverName: document.getElementById('driverName').value.trim(),
+                vehiclePlate: document.getElementById('vehiclePlate').value.trim(),
+                dateTime: document.getElementById('transportDateTime').value,
+                permitNumber: document.getElementById('transportPermit').value.trim()
+            };
+
+            try {
+                await api('/transports', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('transportSuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('transportSuccess').classList.add('hidden'), 3000);
+                document.getElementById('transportForm').reset();
+                showToast('✅ Transport saved!', 'Success');
+                await loadTransport();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        async function loadTransport() {
+            try {
+                transports = await api('/transports');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('transportTable');
+            if (transports.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="5" class="text-center py-8 text-gray-400">No transport records</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = transports.map(t => `
+                    <tr>
+                        <td>${t.driverName}</td>
+                        <td>${t.vehiclePlate}</td>
+                        <td>${fmtDateTime(t.dateTime)}</td>
+                        <td>${t.permitNumber}</td>
+                        <td><button class="btn btn-danger btn-xs" onclick="deleteTransport(${t.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                `).join('');
+        }
+
+        async function deleteTransport(id) {
+            if (!confirm('Delete this transport record?')) return;
+            try {
+                await api('/transports/' + id, { method: 'DELETE' });
+                await loadTransport();
+                showToast('Transport deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // SAVE SECURITY → MySQL
+        // ============================================
+        async function saveSecurity(e) {
+            e.preventDefault();
+            const data = {
+                officerName: document.getElementById('securityName').value.trim(),
+                dateTime: document.getElementById('securityDateTime').value,
+                remarks: document.getElementById('securityRemarks').value.trim(),
+                permitNumber: document.getElementById('securityPermit').value.trim(),
+                signature: document.getElementById('securitySignature').value === 'true'
+            };
+
+            try {
+                await api('/security', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('securitySuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('securitySuccess').classList.add('hidden'), 3000);
+                document.getElementById('securityForm').reset();
+                showToast('✅ Security check saved!', 'Success');
+                await loadSecurity();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        async function loadSecurity() {
+            try {
+                security = await api('/security');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('securityTable');
+            if (security.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" class="text-center py-8 text-gray-400">No security checks</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = security.map(s => `
+                    <tr>
+                        <td>${s.officerName}</td>
+                        <td>${fmtDateTime(s.dateTime)}</td>
+                        <td>${s.remarks || 'N/A'}</td>
+                        <td><span class="status ${s.signature ? 'approved' : 'pending'}">${s.signature ? '✓ Signed' : '⏳ Pending'}</span></td>
+                        <td>${s.permitNumber}</td>
+                        <td><button class="btn btn-danger btn-xs" onclick="deleteSecurity(${s.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                `).join('');
+        }
+
+        async function deleteSecurity(id) {
+            if (!confirm('Delete this security check?')) return;
+            try {
+                await api('/security/' + id, { method: 'DELETE' });
+                await loadSecurity();
+                showToast('Security check deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // SAVE CONTRACTOR → MySQL
+        // ============================================
+        async function saveContractor(e) {
+            e.preventDefault();
+            const data = {
+                contractorId: document.getElementById('contractorId').value.trim(),
+                reason: document.getElementById('contractorReason').value.trim(),
+                referenceNumber: document.getElementById('contractorRef').value.trim(),
+                permitNumber: document.getElementById('contractorPermit').value.trim(),
+                returnable: document.getElementById('contractorReturnable').value === 'true',
+                signature: document.getElementById('contractorSignature').value === 'true'
+            };
+
+            try {
+                await api('/contractors', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('contractorSuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('contractorSuccess').classList.add('hidden'), 3000);
+                document.getElementById('contractorForm').reset();
+                showToast('✅ Contractor saved!', 'Success');
+                await loadContractors();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        async function loadContractors() {
+            try {
+                contractors = await api('/contractors');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('contractorsTable');
+            if (contractors.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="7" class="text-center py-8 text-gray-400">No contractors</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = contractors.map(c => `
+                    <tr>
+                        <td class="font-semibold">${c.contractorId}</td>
+                        <td>${c.reason}</td>
+                        <td>${c.referenceNumber || 'N/A'}</td>
+                        <td><span class="status ${c.returnable ? 'returnable' : 'closed'}">${c.returnable ? '✅ Yes' : '❌ No'}</span></td>
+                        <td><span class="status ${c.signature ? 'approved' : 'pending'}">${c.signature ? '✓ Signed' : '⏳ Pending'}</span></td>
+                        <td>${c.permitNumber}</td>
+                        <td><button class="btn btn-danger btn-xs" onclick="deleteContractor(${c.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                `).join('');
+        }
+
+        async function deleteContractor(id) {
+            if (!confirm('Delete this contractor?')) return;
+            try {
+                await api('/contractors/' + id, { method: 'DELETE' });
+                await loadContractors();
+                showToast('Contractor deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // SAVE APPROVAL → MySQL
+        // ============================================
+        async function saveApproval(e) {
+            e.preventDefault();
+            const data = {
+                approvalId: document.getElementById('approvalId').value.trim(),
+                divisionName: document.getElementById('divisionName').value.trim(),
+                approverName: document.getElementById('approverName').value.trim(),
+                permitNumber: document.getElementById('approvalPermit').value.trim(),
+                signature: document.getElementById('approvalSignature').value === 'true'
+            };
+
+            try {
+                await api('/approvals', { method: 'POST', body: JSON.stringify(data) });
+
+                document.getElementById('approvalSuccess').classList.remove('hidden');
+                setTimeout(() => document.getElementById('approvalSuccess').classList.add('hidden'), 3000);
+                document.getElementById('approvalForm').reset();
+                showToast('✅ Approval saved!', 'Success');
+                await loadApprovals();
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        async function loadApprovals() {
+            try {
+                approvals = await api('/approvals');
+            } catch (err) {
+                return;
+            }
+
+            const tbody = document.getElementById('approvalsTable');
+            if (approvals.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" class="text-center py-8 text-gray-400">No approvals</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = approvals.map(a => `
+                    <tr>
+                        <td class="font-semibold">${a.approvalId}</td>
+                        <td>${a.divisionName}</td>
+                        <td>${a.approverName}</td>
+                        <td><span class="status ${a.signature ? 'approved' : 'pending'}">${a.signature ? '✓ Signed' : '⏳ Pending'}</span></td>
+                        <td>${a.permitNumber}</td>
+                        <td><button class="btn btn-danger btn-xs" onclick="deleteApproval(${a.id})"><i class="fas fa-trash"></i></button></td>
+                    </tr>
+                `).join('');
+        }
+
+        async function deleteApproval(id) {
+            if (!confirm('Delete this approval?')) return;
+            try {
+                await api('/approvals/' + id, { method: 'DELETE' });
+                await loadApprovals();
+                showToast('Approval deleted', 'Deleted');
+            } catch (err) {
+                showToast('⚠️ ' + err.message, 'Error');
+            }
+        }
+
+        // ============================================
+        // LOGOUT
+        // ============================================
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('acwa_token');
+                localStorage.removeItem('acwa_user');
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ============================================
+        // LANGUAGE SWITCH (FR/EN)
+        // ============================================
+        let currentLang = 'en';
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            // ===== BOUTONS LANGUE (en premier pour toujours fonctionner) =====
+            document.getElementById('langFr').classList.toggle('active', lang === 'fr');
+            document.getElementById('langEn').classList.toggle('active', lang === 'en');
+            localStorage.setItem('acwa_lang', lang);
+
+            // ===== SIDEBAR =====
+            document.getElementById('menuNavLabel').textContent = t.menuNavigation;
+            document.getElementById('menuDashboard').textContent = t.menuDashboard;
+            document.getElementById('menuPermis').textContent = t.menuPermis;
+            document.getElementById('menuMateriaux').textContent = t.menuMateriaux;
+            document.getElementById('menuTransport').textContent = t.menuTransport;
+            document.getElementById('menuSecurite').textContent = t.menuSecurite;
+            document.getElementById('menuContractants').textContent = t.menuContractants;
+            document.getElementById('menuApprobations').textContent = t.menuApprobations;
+            document.getElementById('menuUtilisateurs').textContent = t.menuUtilisateurs;
+            document.getElementById('usersTitleText').textContent = t.usersTitleText;
+            document.getElementById('addUserBtnText').textContent = t.addUserBtnText;
+            ['uTableId','uTableName','uTableEmail','uTableRole','uTableCreated','uTableActions'].forEach(k => {
+                const el = document.getElementById(k);
+                if (el && t[k]) el.textContent = t[k];
+            });
+            document.getElementById('menuRapports').textContent = t.menuRapports;
+            document.getElementById('menuCompteLabel').textContent = t.menuCompte;
+            document.getElementById('menuProfil').textContent = t.menuProfil;
+            document.getElementById('menuDeconnexion').innerHTML = `<i class="fas fa-right-from-bracket" style="color:#e74c3c;"></i> ${t.menuDeconnexion}`;
+
+            // ===== TOPBAR =====
+            document.getElementById('pageTitle').textContent = t.pageTitle;
+            document.getElementById('pageSubtitle').textContent = t.pageSubtitle;
+            document.getElementById('userRole').textContent = t.userRole;
+
+            // ===== STATS =====
+            document.getElementById('statTotalLabel').textContent = t.statTotal;
+            document.getElementById('statInLabel').textContent = t.statIn;
+            document.getElementById('statOutLabel').textContent = t.statOut;
+            document.getElementById('statPendingLabel').textContent = t.statPending;
+            document.getElementById('statClosedLabel').textContent = t.statClosed;
+            document.getElementById('statPDFLabel').textContent = t.statPDF;
+
+            // ===== SEARCH =====
+            document.getElementById('searchPermit').placeholder = t.searchPlaceholder;
+            document.querySelectorAll('#searchType option').forEach(opt => {
+                if (opt.value === '') opt.textContent = t.searchAllTypes;
+                else if (opt.value === 'IN') opt.textContent = t.searchTypeIn;
+                else if (opt.value === 'OUT') opt.textContent = t.searchTypeOut;
+            });
+            document.querySelectorAll('#searchStatus option').forEach(opt => {
+                if (opt.value === '') opt.textContent = t.searchAllStatus;
+                else if (opt.value === 'pending') opt.textContent = t.searchStatusPending;
+                else if (opt.value === 'approved') opt.textContent = t.searchStatusApproved;
+                else if (opt.value === 'returnable') opt.textContent = t.searchStatusReturnable;
+                else if (opt.value === 'closed') opt.textContent = t.searchStatusClosed;
+            });
+            document.getElementById('searchBtn').innerHTML = `<i class="fas fa-search"></i> ${t.searchBtn}`;
+            document.getElementById('pdfResultBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.pdfResultBtn}`;
+            document.getElementById('pdfDashboardBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.pdfDashboardBtn}`;
+            document.getElementById('excelHeaderBtn').innerHTML = `<i class="fas fa-file-excel"></i> ${t.excelExport}`;
+            document.getElementById('excelExportBtn').innerHTML = `<i class="fas fa-file-excel"></i> ${t.excelExport}`;
+
+            // ===== TABLE =====
+            document.getElementById('tableTitle').innerHTML = `<i class="fas fa-list-ul text-acwa-purple mr-2"></i> ${t.tablePermis}`;
+            document.getElementById('tableBadge').textContent = t.tableBadge;
+            document.getElementById('thNumber').textContent = t.tableNumber;
+            document.getElementById('thCompany').textContent = t.tableCompany;
+            document.getElementById('thSubstance').textContent = t.tableSubstance;
+            document.getElementById('thType').textContent = t.tableType;
+            document.getElementById('thStatus').textContent = t.tableStatus;
+            document.getElementById('thActions').textContent = t.tableActions;
+
+            // ===== PERMITS =====
+            document.getElementById('permitTitle').innerHTML = `<i class="fas fa-file-alt text-acwa-purple mr-2"></i> ${t.permitTitle}`;
+            document.getElementById('permitBadge').textContent = t.permitBadge;
+            document.getElementById('permitNumberLabel').innerHTML = `${t.permitNumber} <span class="text-red-500">*</span>`;
+            document.getElementById('permitDateLabel').innerHTML = `${t.permitDate} <span class="text-red-500">*</span>`;
+            document.getElementById('permitCompanyLabel').innerHTML = `${t.permitCompany} <span class="text-red-500">*</span>`;
+            document.getElementById('permitAddressLabel').textContent = t.permitAddress;
+            document.getElementById('permitSubstanceLabel').innerHTML = `${t.permitSubstance} <span class="text-red-500">*</span>`;
+            document.getElementById('permitTypeLabel').innerHTML = `${t.permitType} <span class="text-red-500">*</span>`;
+            document.getElementById('permitTypeIn').textContent = t.permitTypeIn;
+            document.getElementById('permitTypeOut').textContent = t.permitTypeOut;
+            document.getElementById('permitSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.permitSave}`;
+            document.getElementById('permitResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.permitReset}`;
+            document.getElementById('permitSuccessMsg').textContent = t.permitSuccess;
+            document.getElementById('allThNumber').textContent = t.tableNumber;
+            document.getElementById('allThCompany').textContent = t.tableCompany;
+            document.getElementById('allThSubstance').textContent = t.tableSubstance;
+            document.getElementById('allThType').textContent = t.tableType;
+            document.getElementById('allThDate').textContent = t.permitDate;
+            document.getElementById('allThStatus').textContent = t.tableStatus;
+            document.getElementById('allThActions').textContent = t.tableActions;
+
+            // ===== MATERIALS =====
+            document.getElementById('materialsTitle').innerHTML = `<i class="fas fa-cubes text-acwa-purple mr-2"></i> ${t.materialsTitle}`;
+            document.getElementById('materialsBadge').textContent = t.materialsBadge;
+            document.getElementById('matEquipmentLabel').innerHTML = `${t.materialsEquipment} <span class="text-red-500">*</span>`;
+            document.getElementById('matPermitLabel').innerHTML = `${t.materialsPermit} <span class="text-red-500">*</span>`;
+            document.getElementById('matDescLabel').innerHTML = `${t.materialsDescription} <span class="text-red-500">*</span>`;
+            document.getElementById('matQtyLabel').innerHTML = `${t.materialsQty} <span class="text-red-500">*</span>`;
+            document.getElementById('matUnitWeightLabel').innerHTML = `${t.materialsUnitWeight} <span class="text-red-500">*</span>`;
+            document.getElementById('matWeightLabel').innerHTML = `${t.materialsWeight} <span class="text-green-500">(${t.materialsAuto})</span>`;
+            document.getElementById('matTypeLabel').innerHTML = `${t.materialsType} <span class="text-red-500">*</span>`;
+            document.getElementById('matTypeIn').textContent = t.searchTypeIn;
+            document.getElementById('matTypeOut').textContent = t.searchTypeOut;
+            document.getElementById('matSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.materialsSave}`;
+            document.getElementById('matResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.materialsReset}`;
+            document.getElementById('matTableEquipment').textContent = t.materialsEquipment;
+            document.getElementById('matTablePermit').textContent = t.materialsPermit;
+            document.getElementById('matTableDesc').textContent = t.materialsDescription;
+            document.getElementById('matTableQty').textContent = t.materialsQty;
+            document.getElementById('matTableUnitWeight').textContent = t.materialsUnitWeight;
+            document.getElementById('matTableWeight').textContent = t.materialsWeight;
+            document.getElementById('matTableType').textContent = t.materialsType;
+            document.getElementById('matTablePhoto').textContent = t.materialsPhoto;
+            document.getElementById('matTableActions').textContent = t.tableActions;
+
+            // ===== TRANSPORT =====
+            document.getElementById('transportTitle').innerHTML = `<i class="fas fa-truck text-acwa-purple mr-2"></i> ${t.transportTitle}`;
+            document.getElementById('transportBadge').textContent = t.transportBadge;
+            document.getElementById('transDriverLabel').innerHTML = `${t.transportDriver} <span class="text-red-500">*</span>`;
+            document.getElementById('transVehicleLabel').innerHTML = `${t.transportVehicle} <span class="text-red-500">*</span>`;
+            document.getElementById('transDateTimeLabel').innerHTML = `${t.transportDateTime} <span class="text-red-500">*</span>`;
+            document.getElementById('transPermitLabel').innerHTML = `${t.transportPermit} <span class="text-red-500">*</span>`;
+            document.getElementById('transSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.transportSave}`;
+            document.getElementById('transResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.transportReset}`;
+            document.getElementById('transTableDriver').textContent = t.transportDriver;
+            document.getElementById('transTableVehicle').textContent = t.transportVehicle;
+            document.getElementById('transTableDateTime').textContent = t.transportDateTime;
+            document.getElementById('transTablePermit').textContent = t.transportPermit;
+            document.getElementById('transTableActions').textContent = t.tableActions;
+
+            // ===== SECURITY =====
+            document.getElementById('securityTitle').innerHTML = `<i class="fas fa-shield-alt text-acwa-purple mr-2"></i> ${t.securityTitle}`;
+            document.getElementById('securityBadge').textContent = t.securityBadge;
+            document.getElementById('secOfficerLabel').innerHTML = `${t.securityOfficer} <span class="text-red-500">*</span>`;
+            document.getElementById('secDateTimeLabel').innerHTML = `${t.securityDateTime} <span class="text-red-500">*</span>`;
+            document.getElementById('secRemarksLabel').textContent = t.securityRemarks;
+            document.getElementById('secPermitLabel').innerHTML = `${t.securityPermit} <span class="text-red-500">*</span>`;
+            document.getElementById('secSignatureLabel').textContent = t.securitySignature;
+            document.getElementById('secSigPending').textContent = t.securitySignaturePending;
+            document.getElementById('secSigSigned').textContent = t.securitySignatureSigned;
+            document.getElementById('secSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.securitySave}`;
+            document.getElementById('secResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.securityReset}`;
+            document.getElementById('secTableOfficer').textContent = t.securityOfficer;
+            document.getElementById('secTableDateTime').textContent = t.securityDateTime;
+            document.getElementById('secTableRemarks').textContent = t.securityRemarks;
+            document.getElementById('secTableSignature').textContent = t.securitySignature;
+            document.getElementById('secTablePermit').textContent = t.securityPermit;
+            document.getElementById('secTableActions').textContent = t.tableActions;
+
+            // ===== CONTRACTORS =====
+            document.getElementById('contractorsTitle').innerHTML = `<i class="fas fa-handshake text-acwa-purple mr-2"></i> ${t.contractorsTitle}`;
+            document.getElementById('contractorsBadge').textContent = t.contractorsBadge;
+            document.getElementById('contIdLabel').innerHTML = `${t.contractorsId} <span class="text-red-500">*</span>`;
+            document.getElementById('contReasonLabel').innerHTML = `${t.contractorsReason} <span class="text-red-500">*</span>`;
+            document.getElementById('contRefLabel').textContent = t.contractorsRef;
+            document.getElementById('contPermitLabel').innerHTML = `${t.contractorsPermit} <span class="text-red-500">*</span>`;
+            document.getElementById('contReturnableLabel').textContent = t.contractorsReturnable;
+            document.getElementById('contReturnableNo').textContent = t.contractorsReturnableNo;
+            document.getElementById('contReturnableYes').textContent = t.contractorsReturnableYes;
+            document.getElementById('contSignatureLabel').textContent = t.contractorsSignature;
+            document.getElementById('contSigPending').textContent = t.contractorsSignaturePending;
+            document.getElementById('contSigSigned').textContent = t.contractorsSignatureSigned;
+            document.getElementById('contSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.contractorsSave}`;
+            document.getElementById('contResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.contractorsReset}`;
+            document.getElementById('contTableId').textContent = t.contractorsId;
+            document.getElementById('contTableReason').textContent = t.contractorsReason;
+            document.getElementById('contTableRef').textContent = t.contractorsRef;
+            document.getElementById('contTableReturnable').textContent = t.contractorsReturnable;
+            document.getElementById('contTableSignature').textContent = t.contractorsSignature;
+            document.getElementById('contTablePermit').textContent = t.contractorsPermit;
+            document.getElementById('contTableActions').textContent = t.tableActions;
+
+            // ===== APPROVALS =====
+            document.getElementById('approvalsTitle').innerHTML = `<i class="fas fa-check-double text-acwa-purple mr-2"></i> ${t.approvalsTitle}`;
+            document.getElementById('approvalsBadge').textContent = t.approvalsBadge;
+            document.getElementById('appIdLabel').innerHTML = `${t.approvalsId} <span class="text-red-500">*</span>`;
+            document.getElementById('appDivisionLabel').innerHTML = `${t.approvalsDivision} <span class="text-red-500">*</span>`;
+            document.getElementById('appApproverLabel').innerHTML = `${t.approvalsApprover} <span class="text-red-500">*</span>`;
+            document.getElementById('appPermitLabel').innerHTML = `${t.approvalsPermit} <span class="text-red-500">*</span>`;
+            document.getElementById('appSignatureLabel').textContent = t.approvalsSignature;
+            document.getElementById('appSigPending').textContent = t.approvalsSignaturePending;
+            document.getElementById('appSigSigned').textContent = t.approvalsSignatureSigned;
+            document.getElementById('appSaveBtn').innerHTML = `<i class="fas fa-save"></i> ${t.approvalsSave}`;
+            document.getElementById('appResetBtn').innerHTML = `<i class="fas fa-undo"></i> ${t.approvalsReset}`;
+            document.getElementById('appTableId').textContent = t.approvalsId;
+            document.getElementById('appTableDivision').textContent = t.approvalsDivision;
+            document.getElementById('appTableApprover').textContent = t.approvalsApprover;
+            document.getElementById('appTableSignature').textContent = t.approvalsSignature;
+            document.getElementById('appTablePermit').textContent = t.approvalsPermit;
+            document.getElementById('appTableActions').textContent = t.tableActions;
+
+            // ===== REPORTS =====
+            document.getElementById('reportsTitle').innerHTML = `<i class="fas fa-chart-bar text-acwa-purple mr-2"></i> ${t.reportsTitle}`;
+            document.getElementById('reportsBadge').textContent = t.reportsBadge;
+            document.getElementById('reportPermisTitle').textContent = t.reportsPermis;
+            document.getElementById('reportPermisDesc').textContent = t.reportsPermisDesc;
+            document.getElementById('reportPermisBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('reportMateriauxTitle').textContent = t.reportsMateriaux;
+            document.getElementById('reportMateriauxDesc').textContent = t.reportsMateriauxDesc;
+            document.getElementById('reportMateriauxBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('reportTransportsTitle').textContent = t.reportsTransports;
+            document.getElementById('reportTransportsDesc').textContent = t.reportsTransportsDesc;
+            document.getElementById('reportTransportsBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('reportContractantsTitle').textContent = t.reportsContractants;
+            document.getElementById('reportContractantsDesc').textContent = t.reportsContractantsDesc;
+            document.getElementById('reportContractantsBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('reportApprobationsTitle').textContent = t.reportsApprobations;
+            document.getElementById('reportApprobationsDesc').textContent = t.reportsApprobationsDesc;
+            document.getElementById('reportApprobationsBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('reportCompletTitle').textContent = t.reportsComplet;
+            document.getElementById('reportCompletDesc').textContent = t.reportsCompletDesc;
+            document.getElementById('reportCompletBtn').innerHTML = `<i class="fas fa-file-pdf"></i> ${t.reportsGenerate}`;
+            document.getElementById('historyTitle').innerHTML = `<i class="fas fa-history text-acwa-purple mr-2"></i> ${t.reportsHistory}`;
+            document.getElementById('historyFile').textContent = t.reportsHistoryFile;
+            document.getElementById('historyType').textContent = t.reportsHistoryType;
+            document.getElementById('historyDate').textContent = t.reportsHistoryDate;
+            document.getElementById('historyActions').textContent = t.reportsHistoryActions;
+
+            // ===== PROFILE =====
+            document.getElementById('profileTitle').innerHTML = `<i class="fas fa-user-cog text-acwa-purple mr-2"></i> ${t.profileTitle}`;
+            document.getElementById('profileBadge').textContent = t.profileBadge;
+            document.getElementById('profileNameLabel').textContent = t.profileName;
+            document.getElementById('profileEmailLabel').textContent = t.profileEmail;
+            document.getElementById('profileRoleLabel').textContent = t.profileRole;
+            document.getElementById('profileChangePasswordTitle').textContent = t.profileChangePassword;
+            document.getElementById('profileCurrentPasswordLabel').innerHTML = `${t.profileCurrentPassword} <span class="text-red-500">*</span>`;
+            document.getElementById('profileNewPasswordLabel').innerHTML = `${t.profileNewPassword} <span class="text-red-500">*</span>`;
+            document.getElementById('profileConfirmPasswordLabel').innerHTML = `${t.profileConfirmPassword} <span class="text-red-500">*</span>`;
+            document.getElementById('profileUpdateBtn').innerHTML = `<i class="fas fa-save"></i> ${t.profileUpdateBtn}`;
+
+            // Reload data to update status labels
+            loadAll();
+        }
+
+        // ============================================
+        // TRANSLATIONS OBJECT
+        // ============================================
+        const translations = {
+            fr: {
+                menuNavigation: 'Navigation',
+                menuDashboard: 'Tableau de bord',
+                menuPermis: 'Permis',
+                menuMateriaux: 'Matériaux',
+                menuTransport: 'Transport',
+                menuSecurite: 'Sécurité',
+                menuContractants: 'Contractants',
+                menuApprobations: 'Approbations',
+                menuUtilisateurs: 'Utilisateurs',
+                usersTitleText: 'Gestion des Utilisateurs',
+                addUserBtnText: 'Ajouter un utilisateur',
+                uTableId: '#',
+                uTableName: 'Nom',
+                uTableEmail: 'Email',
+                uTableRole: 'Rôle',
+                uTableCreated: 'Créé le',
+                uTableActions: 'Actions',
+                userModalAdd: 'Ajouter un utilisateur',
+                userModalEdit: "Modifier l'utilisateur",
+                userNameLabel: 'Nom complet',
+                userEmailLabel: 'Email',
+                userRoleLabel: 'Rôle',
+                roleAdmin: 'Administrateur',
+                roleUser: 'Utilisateur',
+                userPasswordLabel: 'Mot de passe',
+                userPasswordHint: 'laisser vide pour ne pas changer',
+                saveBtnGeneric: 'Enregistrer',
+                cancelBtn: 'Annuler',
+                confirmDeleteUser: 'Supprimer cet utilisateur ?',
+                menuRapports: 'Rapports',
+                menuCompte: 'Compte',
+                menuProfil: 'Profil',
+                menuDeconnexion: 'Déconnexion',
+                pageTitle: 'Vue d\'ensemble',
+                pageSubtitle: 'Bienvenue au centre de contrôle régional.',
+                userRole: 'Admin',
+                statTotal: 'Total Permis',
+                statIn: 'Entrées (IN)',
+                statOut: 'Sorties (OUT)',
+                statPending: 'En attente',
+                statClosed: 'Fermés',
+                statPDF: 'PDF Générés',
+                searchPlaceholder: '🔍 Rechercher par numéro, société ou destination...',
+                searchAllTypes: 'Tous les types',
+                searchTypeIn: 'IN',
+                searchTypeOut: 'OUT',
+                searchAllStatus: 'Tous les statuts',
+                searchStatusPending: 'En attente',
+                searchStatusApproved: 'Approuvé',
+                searchStatusReturnable: 'Returnable',
+                searchStatusClosed: 'Fermé',
+                searchBtn: 'Rechercher',
+                pdfResultBtn: 'PDF Résultat',
+                pdfDashboardBtn: 'PDF Dashboard',
+                excelExport: 'Exporter Excel',
+                tablePermis: 'Permis Récents',
+                tableBadge: 'Live',
+                tableNumber: 'N° Permis',
+                tableCompany: 'Société',
+                tableSubstance: 'Destination',
+                tableType: 'Type',
+                tableStatus: 'Statut',
+                tableActions: 'Actions',
+                permitTitle: 'Gestion des Permis',
+                permitBadge: 'PERMIT_DETAILS',
+                permitNumber: 'N° Permis',
+                permitDate: 'Date',
+                permitCompany: 'Société',
+                permitAddress: 'Adresse',
+                permitSubstance: 'Destination',
+                permitType: 'Type',
+                permitTypeIn: 'IN (Entrée)',
+                permitTypeOut: 'OUT (Sortie)',
+                permitSave: 'Enregistrer',
+                permitReset: 'Réinitialiser',
+                permitSuccess: '✅ Permis enregistré !',
+                materialsTitle: 'Matériaux',
+                materialsBadge: 'MATERIALS',
+                materialsEquipment: 'N° Équipement',
+                materialsPermit: 'Permis #',
+                materialsDescription: 'Description',
+                materialsAuto: 'auto',
+                materialsQty: 'Quantité',
+                materialsUnitWeight: 'Poids Unitaire (kg)',
+                materialsWeight: 'Poids (kg)',
+                materialsType: 'Type',
+                materialsPhoto: 'Photo',
+                materialsSave: 'Enregistrer',
+                materialsReset: 'Réinitialiser',
+                transportTitle: 'Transport',
+                transportBadge: 'TRANSPORTS',
+                transportDriver: 'Chauffeur',
+                transportVehicle: 'Véhicule',
+                transportDateTime: 'Date/Heure',
+                transportPermit: 'Permis #',
+                transportSave: 'Enregistrer',
+                transportReset: 'Réinitialiser',
+                securityTitle: 'Contrôle Sécurité',
+                securityBadge: 'SECURITY',
+                securityOfficer: 'Agent',
+                securityDateTime: 'Date/Heure',
+                securityRemarks: 'Observations',
+                securityPermit: 'Permis #',
+                securitySignature: 'Signature',
+                securitySignaturePending: 'En attente',
+                securitySignatureSigned: 'Signé',
+                securitySave: 'Enregistrer',
+                securityReset: 'Réinitialiser',
+                contractorsTitle: 'Contractants',
+                contractorsBadge: 'CONTRACTORS',
+                contractorsId: 'ID',
+                contractorsReason: 'Raison',
+                contractorsRef: 'Référence',
+                contractorsPermit: 'Permis #',
+                contractorsReturnable: 'Returnable',
+                contractorsReturnableNo: 'Non',
+                contractorsReturnableYes: 'Oui',
+                contractorsSignature: 'Signature',
+                contractorsSignaturePending: 'En attente',
+                contractorsSignatureSigned: 'Signé',
+                contractorsSave: 'Enregistrer',
+                contractorsReset: 'Réinitialiser',
+                approvalsTitle: 'Approbations',
+                approvalsBadge: 'APPROVALS',
+                approvalsId: 'ID',
+                approvalsDivision: 'Division',
+                approvalsApprover: 'Approbateur',
+                approvalsSignature: 'Signature',
+                approvalsPermit: 'Permis #',
+                approvalsSignaturePending: 'En attente',
+                approvalsSignatureSigned: 'Signé',
+                approvalsSave: 'Enregistrer',
+                approvalsReset: 'Réinitialiser',
+                reportsTitle: 'Rapports PDF',
+                reportsBadge: 'Génération',
+                reportsPermis: 'Permis',
+                reportsPermisDesc: 'Liste complète',
+                reportsMateriaux: 'Matériaux',
+                reportsMateriauxDesc: 'Inventaire complet',
+                reportsTransports: 'Transports',
+                reportsTransportsDesc: 'Suivi des livraisons',
+                reportsContractants: 'Contractants',
+                reportsContractantsDesc: 'Liste des contractants',
+                reportsApprobations: 'Approbations',
+                reportsApprobationsDesc: 'Suivi des approbations',
+                reportsComplet: 'Rapport Complet',
+                reportsCompletDesc: 'Toutes les données',
+                reportsGenerate: 'Générer PDF',
+                reportsHistory: 'Historique des PDF',
+                reportsHistoryFile: 'Fichier',
+                reportsHistoryType: 'Type',
+                reportsHistoryDate: 'Date',
+                reportsHistoryActions: 'Actions',
+                profileTitle: 'Mon Profil',
+                profileBadge: 'Compte',
+                profileName: 'Nom',
+                profileEmail: 'Email',
+                profileRole: 'Rôle',
+                profileChangePassword: '🔑 Changer le mot de passe',
+                profileCurrentPassword: 'Mot de passe actuel',
+                profileNewPassword: 'Nouveau mot de passe',
+                profileConfirmPassword: 'Confirmer',
+                profileUpdateBtn: 'Mettre à jour'
+            },
+            en: {
+                menuNavigation: 'Navigation',
+                menuDashboard: 'Dashboard',
+                menuPermis: 'Permits',
+                menuMateriaux: 'Materials',
+                menuTransport: 'Transport',
+                menuSecurite: 'Security',
+                menuContractants: 'Contractors',
+                menuApprobations: 'Approvals',
+                menuUtilisateurs: 'Users',
+                usersTitleText: 'Users Management',
+                addUserBtnText: 'Add user',
+                uTableId: '#',
+                uTableName: 'Name',
+                uTableEmail: 'Email',
+                uTableRole: 'Role',
+                uTableCreated: 'Created',
+                uTableActions: 'Actions',
+                userModalAdd: 'Add user',
+                userModalEdit: 'Edit user',
+                userNameLabel: 'Full name',
+                userEmailLabel: 'Email',
+                userRoleLabel: 'Role',
+                roleAdmin: 'Administrator',
+                roleUser: 'User',
+                userPasswordLabel: 'Password',
+                userPasswordHint: 'leave empty to keep current',
+                saveBtnGeneric: 'Save',
+                cancelBtn: 'Cancel',
+                confirmDeleteUser: 'Delete this user?',
+                menuRapports: 'Reports',
+                menuCompte: 'Account',
+                menuProfil: 'Profile',
+                menuDeconnexion: 'Logout',
+                pageTitle: 'Overview',
+                pageSubtitle: 'Welcome to the regional control center.',
+                userRole: 'Admin',
+                statTotal: 'Total Permits',
+                statIn: 'Entries (IN)',
+                statOut: 'Exits (OUT)',
+                statPending: 'Pending',
+                statClosed: 'Closed',
+                statPDF: 'PDF Generated',
+                searchPlaceholder: '🔍 Search by number, company or destination...',
+                searchAllTypes: 'All Types',
+                searchTypeIn: 'IN',
+                searchTypeOut: 'OUT',
+                searchAllStatus: 'All Status',
+                searchStatusPending: 'Pending',
+                searchStatusApproved: 'Approved',
+                searchStatusReturnable: 'Returnable',
+                searchStatusClosed: 'Closed',
+                searchBtn: 'Search',
+                pdfResultBtn: 'PDF Result',
+                pdfDashboardBtn: 'PDF Dashboard',
+                excelExport: 'Export Excel',
+                tablePermis: 'Recent Permits',
+                tableBadge: 'Live',
+                tableNumber: 'Permit #',
+                tableCompany: 'Company',
+                tableSubstance: 'Destination',
+                tableType: 'Type',
+                tableStatus: 'Status',
+                tableActions: 'Actions',
+                permitTitle: 'Permit Management',
+                permitBadge: 'PERMIT_DETAILS',
+                permitNumber: 'Permit #',
+                permitDate: 'Date',
+                permitCompany: 'Company',
+                permitAddress: 'Address',
+                permitSubstance: 'Destination',
+                permitType: 'Type',
+                permitTypeIn: 'IN (Entry)',
+                permitTypeOut: 'OUT (Exit)',
+                permitSave: 'Save',
+                permitReset: 'Reset',
+                permitSuccess: '✅ Permit saved!',
+                materialsTitle: 'Materials',
+                materialsBadge: 'MATERIALS',
+                materialsEquipment: 'Equipment #',
+                materialsPermit: 'Permit #',
+                materialsDescription: 'Description',
+                materialsAuto: 'auto',
+                materialsQty: 'Quantity',
+                materialsUnitWeight: 'Unit Weight (kg)',
+                materialsWeight: 'Weight (kg)',
+                materialsType: 'Type',
+                materialsPhoto: 'Photo',
+                materialsSave: 'Save',
+                materialsReset: 'Reset',
+                transportTitle: 'Transport',
+                transportBadge: 'TRANSPORTS',
+                transportDriver: 'Driver',
+                transportVehicle: 'Vehicle',
+                transportDateTime: 'Date/Time',
+                transportPermit: 'Permit #',
+                transportSave: 'Save',
+                transportReset: 'Reset',
+                securityTitle: 'Security Check',
+                securityBadge: 'SECURITY',
+                securityOfficer: 'Officer',
+                securityDateTime: 'Date/Time',
+                securityRemarks: 'Remarks',
+                securityPermit: 'Permit #',
+                securitySignature: 'Signature',
+                securitySignaturePending: 'Pending',
+                securitySignatureSigned: 'Signed',
+                securitySave: 'Save',
+                securityReset: 'Reset',
+                contractorsTitle: 'Contractors',
+                contractorsBadge: 'CONTRACTORS',
+                contractorsId: 'ID',
+                contractorsReason: 'Reason',
+                contractorsRef: 'Reference',
+                contractorsPermit: 'Permit #',
+                contractorsReturnable: 'Returnable',
+                contractorsReturnableNo: 'No',
+                contractorsReturnableYes: 'Yes',
+                contractorsSignature: 'Signature',
+                contractorsSignaturePending: 'Pending',
+                contractorsSignatureSigned: 'Signed',
+                contractorsSave: 'Save',
+                contractorsReset: 'Reset',
+                approvalsTitle: 'Approvals',
+                approvalsBadge: 'APPROVALS',
+                approvalsId: 'ID',
+                approvalsDivision: 'Division',
+                approvalsApprover: 'Approver',
+                approvalsSignature: 'Signature',
+                approvalsPermit: 'Permit #',
+                approvalsSignaturePending: 'Pending',
+                approvalsSignatureSigned: 'Signed',
+                approvalsSave: 'Save',
+                approvalsReset: 'Reset',
+                reportsTitle: 'PDF Reports',
+                reportsBadge: 'Generation',
+                reportsPermis: 'Permits',
+                reportsPermisDesc: 'Complete list',
+                reportsMateriaux: 'Materials',
+                reportsMateriauxDesc: 'Full inventory',
+                reportsTransports: 'Transports',
+                reportsTransportsDesc: 'Delivery tracking',
+                reportsContractants: 'Contractors',
+                reportsContractantsDesc: 'Contractors list',
+                reportsApprobations: 'Approvals',
+                reportsApprobationsDesc: 'Approval tracking',
+                reportsComplet: 'Complete Report',
+                reportsCompletDesc: 'All data',
+                reportsGenerate: 'Generate PDF',
+                reportsHistory: 'PDF History',
+                reportsHistoryFile: 'File',
+                reportsHistoryType: 'Type',
+                reportsHistoryDate: 'Date',
+                reportsHistoryActions: 'Actions',
+                profileTitle: 'My Profile',
+                profileBadge: 'Account',
+                profileName: 'Name',
+                profileEmail: 'Email',
+                profileRole: 'Role',
+                profileChangePassword: '🔑 Change Password',
+                profileCurrentPassword: 'Current Password',
+                profileNewPassword: 'New Password',
+                profileConfirmPassword: 'Confirm Password',
+                profileUpdateBtn: 'Update'
+            }
+        };
+
+        // ============================================
+        // INIT
+        // ============================================
+        loadAll();
+        switchLanguage(localStorage.getItem('acwa_lang') || 'en');
+
+        console.log('✅ ACWA Operations System loaded');
+        console.log('💾 Toutes les données sont enregistrées dans MySQL (noor_inventory)');
+        console.log('🔄 IN/OUT System with Returnable → Closed management');
+        console.log('🔍 Real-time search with PDF export');
+        console.log('🌐 Default language: ENGLISH');
+    </script>
+
+</body>
+</html>
