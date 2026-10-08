@@ -60,19 +60,18 @@ recorded, timestamped and exportable.
 
 ## 📸 Screenshots
 
-<!-- Drop your captures in docs/ and uncomment the lines below.
-     Suggested: login, dashboard KPIs, permit list, permit detail, material
-     entry with photo, Excel/PDF export, user management (admin only).
+<p align="center">
+  <img src="docs/01-login.png" alt="Sign-in screen" width="48%" />
+  <img src="docs/02-dashboard.png" alt="Operations dashboard" width="48%" />
+</p>
+<p align="center">
+  <img src="docs/03-permits.png" alt="Permit register" width="48%" />
+  <img src="docs/04-materials.png" alt="Material entry with auto-weight" width="48%" />
+</p>
 
-<p align="center">
-  <img src="docs/01-login.png" alt="Login screen" width="45%" />
-  <img src="docs/02-dashboard.png" alt="Dashboard" width="45%" />
-</p>
-<p align="center">
-  <img src="docs/03-permits.png" alt="Permit register" width="45%" />
-  <img src="docs/04-materials.png" alt="Material entry" width="45%" />
-</p>
--->
+<!-- Add your own captures to docs/ and extend the blocks above.
+     Suggested: transport, security checks, contractors, approvals,
+     Excel/PDF export, user management (admin only). -->
 
 ---
 
